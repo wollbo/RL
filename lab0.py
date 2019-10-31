@@ -40,7 +40,6 @@ rewards = [1/(0.1+np.linalg.norm(np.array([state[0]-5, state[1]-5]))) for state 
 
 decay = 0.9
 
-def value(states, rewards, val)
-    
+def value(states, rewards, val):
 
 
