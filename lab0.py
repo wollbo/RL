@@ -1,5 +1,4 @@
-# from p1 import *
-
+# from import-stuff import *
 
 import numpy as np
 
@@ -9,37 +8,56 @@ maze = np.full((n_rows, n_cols), True)
 maze[0:3, 2] = False
 maze[4, 1:6] = False
 
+
+class State:
+    def __init__(self, index):
+        self.index = index
+        self.neighbours = []
+
+    def __str__(self):
+        return str(self.index)
+
+
 states = []
 for row in range(n_rows):
     for col in range(n_cols):
         if maze[row, col]:
-            states.append((row, col))
+            states.append(State(index=(row, col)))
 
 n_states = len(states)
 p = np.zeros((n_states, n_states))
 
-ne_rel_inds = [(0, 0), (-1, 0), (0, 1), (1, 0), (0, -1)]
-neighbours = [None for _ in range(n_states)]
 for state in states:
-    ne_states = []
-    for ne_rel_ind in ne_rel_inds:
+    state.neighbours.append(state)
+    for other_state in states:
+        if np.abs(other_state.index[0]-state.index[0]) == 1 and np.abs(other_state.index[1]-state.index[1]) == 0:
+            state.neighbours.append(other_state)
+        elif np.abs(other_state.index[0]-state.index[0]) == 0 and np.abs(other_state.index[1]-state.index[1]) == 1:
+            state.neighbours.append(other_state)
 
-        ne_ind = (state[0] + ne_rel_ind[0], state[1] + ne_rel_ind[1])
-
-        if (n_rows > ne_ind[0] >= 0) and (n_cols > ne_ind[1] >= 0):
-            if maze[ne_ind]:
-                ne_states.append(ne_ind)
-    neighbours[states.index(state)] = ne_states
-
-    n_nes = len(ne_states)
-
-    for ne in ne_states:
+for state in states:
+    n_nes = len(state.neighbours)
+    for ne in state.neighbours:
         p[states.index(state), states.index(ne)] = 1/n_nes
 
-rewards = [1/(0.1+np.linalg.norm(np.array([state[0]-5, state[1]-5]))) for state in states]
+print(p[:10, :10])
+
+for state in states:
+    print(state)
+    for ne in state.neighbours:
+        print('\t'+str(ne))
+
+
+rewards = [1/(0.1+np.linalg.norm(np.array([state.index[0]-5, state.index[1]-5]))) for state in states]
 
 decay = 0.9
 
-def value(states, rewards, val):
+
+def q(current_state, neighbours, rewards, decay):
+    nes = neighbours[states.index(current_state)]
+    return [rewards[states.index(ne)] + decay * q(ne, neighbours, rewards, decay) for ne in nes]
+
+
+#print(q((0, 0), neighbours, rewards, decay))
 
 
