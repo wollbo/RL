@@ -1,6 +1,7 @@
 # from import-stuff import *
 
 import numpy as np
+from numpy import array
 import matplotlib.pyplot as plt
 np.set_printoptions(precision=2)
 
@@ -12,17 +13,16 @@ maze[4, 1:6] = False
 
 
 class State:
-    def __init__(self, index, value):
+    def __init__(self, index):
         self.index = index
         self.neighbours = []
-        self.value = value
+        self.value = 0
+        self.policy = None  # index of neighbour to go to!
 
     def __str__(self):
-        return str(self.index)
-
-    def best_next_state(self):
-        ne_values = array([ne.value for ne in self.neighbours])
-        return self.neighbours[np.argmax(ne_values)]
+        return 'state: ' + str(self.index) +\
+               ', value: ' + str(self.value) +\
+               ', next: ' + str(self.neighbours[self.policy])
 
 
 def value_maze_from_states(states, n, m):
@@ -31,8 +31,17 @@ def value_maze_from_states(states, n, m):
         vm[state.index] = state.value
     return vm
 
-def policy_maze_from_states(states, n, m, ax):
-    pass
+
+def policy_maze_from_states(states):
+    for state in states:
+        other_state = state.neighbours[state.policy]
+        x = state.index[1]
+        dx = other_state.index[1] - x
+        y = -state.index[0]
+        dy = -other_state.index[0] - y
+        plt.arrow(x, y, dx, dy, fc='k', ec='k', head_width=0.15, head_length=0.4, length_includes_head=True)
+    plt.gca().set_aspect('equal')
+    plt.axis([-1, 7, -6, 1])
 
 
 states = []
@@ -40,12 +49,11 @@ for row in range(n_rows):
     for col in range(n_cols):
         if maze[row, col]:
             if row == 5 and col == 5:
-                states.append(State(index=(row, col), value=1))    # target
+                target = State(index=(row, col))
+                states.append(target)
             else:
-                states.append(State(index=(row, col), value=0))
-
+                states.append(State(index=(row, col)))
 n_states = len(states)
-p = np.zeros((n_states, n_states))
 
 for state in states:
     state.neighbours.append(state)
@@ -54,29 +62,44 @@ for state in states:
             state.neighbours.append(other_state)
         elif np.abs(other_state.index[0]-state.index[0]) == 0 and np.abs(other_state.index[1]-state.index[1]) == 1:
             state.neighbours.append(other_state)
+
+transition_probability = np.zeros((n_states, n_states))
 for state in states:
     n_nes = len(state.neighbours)
     for ne in state.neighbours:
-        p[states.index(state), states.index(ne)] = 1/n_nes
+        transition_probability[states.index(state), states.index(ne)] = 1/n_nes
 
-# for state in states:
-#     print(state)
-#     for ne in state.neighbours:
-#         print('\t'+str(ne))
-rewards = [1/(0.1+np.linalg.norm(np.array([state.index[0]-5, state.index[1]-5]))) for state in states]
-decay = 0.97
+transition_reward = np.zeros((n_states, n_states))
+nes = target.neighbours
+for ne in nes:
+    transition_reward[states.index(ne), states.index(target)] = 10   # reward for going to / staying at the target!
 
-n_iter = 4
+gamma = 0.99
 
-fig, ax = plt.subplots(1, n_iter+1)
-value_maze = value_maze_from_states(states, n_rows, n_cols)
-ax[0].matshow(value_maze)
+n_iter = 10
+fig, ax = plt.subplots(1, n_iter)
+fig1 = plt.figure(1)
 
-for i in range(1, n_iter+1):
+for i in range(n_iter):
+    " VALUE UPDATE "
     for state in states:
-        ne_values = [ne.value for ne in state.neighbours]
-        state.value = decay*np.sum(ne_values)
-        ax[i].matshow(value_maze_from_states(states, n_rows, n_cols))
-    print(value_maze_from_states(states, n_rows, n_cols))
+        value_elements = [transition_reward[states.index(state), states.index(ne)] + gamma*ne.value for ne in state.neighbours]
+        state.value = sum(value_elements)
+
+    " POLICY UPDATE "
+    for state in states:
+        value_elements = [transition_reward[states.index(state), states.index(ne)] + gamma*ne.value for ne in state.neighbours]
+        state.policy = np.argmax(array([value_elements]))
+
+    # print(value_maze_from_states(states, n_rows, n_cols))
+    # ax[i].matshow(value_maze_from_states(states, n_rows, n_cols))
+
+    plt.figure(1)
+    plt.subplot(1, n_iter, i+1)
+    policy_maze_from_states(states)
 
 plt.show()
+
+
+
+
