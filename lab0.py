@@ -45,13 +45,14 @@ def get_state_values(states, n, m):
 
 
 def show_state_policies(states):
+    # plt.subplot(n, m, i) must come before calling this function
     for state in states:
         other_state = state.neighbours[state.policy]
         x = state.index[1]
         dx = other_state.index[1] - x
         y = -state.index[0]
         dy = -other_state.index[0] - y
-        plt.arrow(x, y, dx, dy, fc='k', ec='k', head_width=0.15, head_length=0.4, length_includes_head=True)
+        plt.arrow(x, y, dx, dy, fc='k', ec='k', head_width=0.25, head_length=0.5, length_includes_head=True)
 
 
 states = []
@@ -93,6 +94,7 @@ value_convergence = np.full(n_states, False)
 i = 0
 while not (all(policy_convergence) and all(value_convergence)):
     print('i={:.0f}'.format(i))
+
     " VALUE UPDATE "
     for state in states:
         value_elements = [transition_reward[states.index(state), states.index(ne)] + gamma*ne.value for ne in state.neighbours]
@@ -129,13 +131,13 @@ values = get_state_values(states, n_rows, n_cols)
 print(values)
 
 plt.subplot(2, 1, 1)
-
 plt.matshow(np.log(values), fignum=False)
 
 plt.subplot(2, 1, 2)
 show_state_policies(states)
 plt.gca().set_aspect('equal')
 plt.axis([-1, 7, -6, 1])
+plt.grid(color='k', linestyle='-', linewidth=1, which='minor')
 
 plt.show()
 
