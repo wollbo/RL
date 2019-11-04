@@ -95,7 +95,7 @@ nes = target.neighbours
 for ne in nes:
     transition_reward[states.index(ne), states.index(target)] = 100   # reward for going to / staying at the target!
 
-gamma = 0.9
+gamma = 0.99
 
 policy_convergence = np.full(n_states, False)
 value_convergence = np.full(n_states, False)
@@ -142,7 +142,7 @@ while not (all(policy_convergence) and all(value_convergence)):
     ax2.set_xlabel('State policies')
     plt.gca().set_aspect('equal')
     plt.axis([-1, n_cols, -n_rows, 1])
-    plt.pause(0.01)
+    plt.pause(0.05)
 
     i += 1
 
