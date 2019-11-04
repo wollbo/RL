@@ -6,6 +6,9 @@ np.set_printoptions(precision=2)
 
 
 class State:
+    value_tolerance = 1e-6
+    target = None
+
     def __init__(self, index):
         self.index = index
         self.neighbours = []
@@ -19,7 +22,7 @@ class State:
         return 'state: ' + str(self.index)
 
     def update_value(self):
-        no_change = np.abs(self.value - self.next_value) <= 1e-2        # check convergence
+        no_change = np.abs(self.value - self.next_value) <= self.value_tolerance        # check convergence
         self.value = self.next_value                                    # update value
         return no_change
 
@@ -128,4 +131,48 @@ def iterative_value_policy_update(maze, states, gamma, pause_time):
         plt.axis([-1, n_cols, -n_rows, 1])
         plt.pause(pause_time)
         i += 1
+    plt.show()
+
+
+
+def value_iteration(maze, states, gamma, pause_time):
+    (n_rows, n_cols) = maze.shape
+    n_states = len(states)
+    transition_probability = np.zeros((n_states, n_states))
+    for state in states:
+        n_nes = len(state.neighbours)
+        for ne in state.neighbours:
+            transition_probability[states.index(state), states.index(ne)] = 1 / n_nes  # uniform
+    transition_reward = np.zeros((n_states, n_states))
+    target = [s for s in states if s.is_target][0]
+    nes = target.neighbours
+    for ne in nes:
+        transition_reward[states.index(ne), states.index(target)] = 100  # reward for going to / staying at the target!
+    policy_convergence = np.full(n_states, False)
+    value_convergence = np.full(n_states, False)
+    i = 0
+    ax1 = plt.subplot(1, 1, 1)
+    while not all(value_convergence):
+        print('i={:.0f}'.format(i))
+        " VALUE ITERATION UPDATE "
+        for state in states:
+            value_elements = array([transition_probability[states.index(state), states.index(ne)] *
+                                    (transition_reward[states.index(state), states.index(ne)] +
+                                     gamma * ne.value) for ne in state.neighbours])
+            state.next_value = np.max(value_elements)
+        for state in states:
+            value_convergence[states.index(state)] = state.update_value()
+        if all(value_convergence):
+            print('\tvalues: converged')
+        else:
+            print('\tvalues: not converged')
+
+        values = get_state_values(states, n_rows, n_cols)
+        print(values)
+
+        ax1.matshow(np.log(values))
+        ax1.set_xlabel('State values')
+        plt.pause(pause_time)
+        i += 1
+
     plt.show()

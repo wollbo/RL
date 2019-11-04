@@ -12,5 +12,7 @@ maze[4, 1:6] = False
 # maze[7:9, 7] = False
 
 states = generate_states(maze=maze)
-iterative_value_policy_update(maze=maze, states=states, gamma=0.9, pause_time=0.001)
+# iterative_value_policy_update(maze=maze, states=states, gamma=0.9, pause_time=0.001)
+
+value_iteration(maze=maze, states=states, gamma=0.9, pause_time=0.001)
 
