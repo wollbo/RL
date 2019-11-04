@@ -2,6 +2,7 @@
 
 import numpy as np
 from numpy import array
+from numpy import nan
 import matplotlib.pyplot as plt
 np.set_printoptions(precision=2)
 
@@ -27,20 +28,21 @@ class State:
                ', next: ' + str(self.neighbours[self.policy])
 
     def update_value(self):
-        is_change = self.value == self.next_value
-        self.value = self.next_value
-        return is_change
+        no_change = np.abs(self.value - self.next_value) <= 1e-2        # check convergence
+        self.value = self.next_value                                    # update value
+        return no_change
 
     def update_policy(self):
-        is_change = self.policy == self.next_policy     # check convergence
-        self.policy = self.next_policy              # update policy
-        return is_change
+        no_change = self.policy == self.next_policy     # check convergence
+        self.policy = self.next_policy                  # update policy
+        return no_change
 
 
 def get_state_values(states, n, m):
-    vm = np.full((n, m), np.nan)
+    vm = np.full((n, m), nan)
     for state in states:
-        vm[state.index] = state.value
+        if state.value != 0:
+            vm[state.index] = state.value
     return vm
 
 
@@ -84,9 +86,9 @@ for state in states:
 transition_reward = np.zeros((n_states, n_states))
 nes = target.neighbours
 for ne in nes:
-    transition_reward[states.index(ne), states.index(target)] = 1   # reward for going to / staying at the target!
+    transition_reward[states.index(ne), states.index(target)] = 100   # reward for going to / staying at the target!
 
-gamma = 0.1
+gamma = 0.9
 
 policy_convergence = np.full(n_states, False)
 value_convergence = np.full(n_states, False)
@@ -97,7 +99,8 @@ while not (all(policy_convergence) and all(value_convergence)):
 
     " VALUE UPDATE "
     for state in states:
-        value_elements = [transition_reward[states.index(state), states.index(ne)] + gamma*ne.value for ne in state.neighbours]
+        value_elements = [transition_probability[states.index(state), states.index(ne)] *
+                          (transition_reward[states.index(state), states.index(ne)] + gamma*ne.value) for ne in state.neighbours]
         state.next_value = sum(value_elements)
     for state in states:
         value_convergence[states.index(state)] = state.update_value()
@@ -117,27 +120,23 @@ while not (all(policy_convergence) and all(value_convergence)):
     else:
         print('\tpolicies: not converged')
 
-    # plt.subplot(2, 30, i+1)
-    # plt.matshow(get_state_values(states, n_rows, n_cols), fignum=False)
-    #
-    # plt.subplot(2, 30, 30+i+1)
-    # show_state_policies(states)
-    # plt.gca().set_aspect('equal')
-    # plt.axis([-1, 7, -6, 1])
+    values = get_state_values(states, n_rows, n_cols)
+    print(values)
+
+    ax1 = plt.subplot(2, 1, 1)
+    ax1.matshow(np.log(values))
+    ax1.set_xlabel('State values')
+    ax2 = plt.subplot(2, 1, 2)
+    ax2.set_yticklabels([])
+    ax2.set_xticklabels([])
+    ax2.set_xlabel('State policies')
+    show_state_policies(states)
+    plt.gca().set_aspect('equal')
+    plt.axis([-1, 7, -6, 1])
+
+    plt.pause(0.02)
 
     i += 1
-
-values = get_state_values(states, n_rows, n_cols)
-print(values)
-
-plt.subplot(2, 1, 1)
-plt.matshow(np.log(values), fignum=False)
-
-plt.subplot(2, 1, 2)
-show_state_policies(states)
-plt.gca().set_aspect('equal')
-plt.axis([-1, 7, -6, 1])
-plt.grid(color='k', linestyle='-', linewidth=1, which='minor')
 
 plt.show()
 
