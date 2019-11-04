@@ -9,13 +9,14 @@ class State:
     value_tolerance = 1e-10
     target_state = None         # tba
 
-    def __init__(self, index):
+    def __init__(self, index, in_maze=True):
         self.index = index
         self.neighbours = []
         self.value = 0
         self.next_value = 0
         self.policy = 0         # index of neighbour to go to!
         self.next_policy = 0
+        self.in_maze = in_maze
 
     def __str__(self):
         return 'state: ' + str(self.index)
@@ -32,9 +33,9 @@ class State:
 
 
 def get_state_values(states, n, m):
-    vm = np.full((n, m), nan)
+    vm = np.full((n, m), nan)   # vm : value maze
     for state in states:
-        if state.value != 0:
+        if state.value != 0 and state.in_maze:
             vm[state.index] = state.value
     return vm
 
@@ -58,7 +59,7 @@ def show_state_policies(states, axis):
         plt.arrow(x, y, dx, dy, fc='k', ec='k', head_width=0.25, head_length=0.5, length_includes_head=True)
 
 
-def generate_states(maze):
+def generate_maze_states(maze):
     (n_rows, n_cols) = maze.shape
     states = []
     for row in range(n_rows):
@@ -73,27 +74,36 @@ def generate_states(maze):
     for state in states:
         state.neighbours.append(state)
         for other_state in states:
-            if np.abs(other_state.index[0]-state.index[0]) == 1 and np.abs(other_state.index[1]-state.index[1]) == 0:
-                state.neighbours.append(other_state)
-            elif np.abs(other_state.index[0]-state.index[0]) == 0 and np.abs(other_state.index[1]-state.index[1]) == 1:
-                state.neighbours.append(other_state)
+            if np.abs(other_state.index[0] - state.index[0]) == 1 and np.abs(
+                    other_state.index[1] - state.index[1]) == 0:
+                state.neighbours.append(other_state)  # same row
+            elif np.abs(other_state.index[0] - state.index[0]) == 0 and np.abs(
+                    other_state.index[1] - state.index[1]) == 1:
+                state.neighbours.append(other_state)  # same column
     return states
 
 
-def policy_value_iteration(maze, states, gamma, pause_time):
-    (n_rows, n_cols) = maze.shape
+def get_transition_probability(states):
     n_states = len(states)
     transition_probability = np.zeros((n_states, n_states))
     for state in states:
         n_nes = len(state.neighbours)
         for ne in state.neighbours:
-            transition_probability[states.index(state), states.index(ne)] = 1/n_nes     # uniform
-    transition_reward = np.zeros((n_states, n_states))
+            transition_probability[states.index(state), states.index(ne)] = 1 / n_nes  # uniform
+    return transition_probability
 
+def get_transition_reward(states):
+    n_states = len(states)
+    transition_reward = np.zeros((n_states, n_states))
     target = State.target_state
     nes = target.neighbours
     for ne in nes:
         transition_reward[states.index(ne), states.index(target)] = 100   # reward for going to / staying at the target!
+    return transition_reward
+
+def policy_value_iteration(maze, states, transition_probability, transition_reward, gamma, pause_time):
+    (n_rows, n_cols) = maze.shape
+    n_states = len(states)
     policy_convergence = np.full(n_states, False)
     value_convergence = np.full(n_states, False)
     i = 0
@@ -139,21 +149,9 @@ def policy_value_iteration(maze, states, gamma, pause_time):
 
     # plt.show()
 
-
-def value_iteration(maze, states, gamma, pause_time):
+def value_iteration(maze, states, transition_probability, transition_reward, gamma, pause_time):
     (n_rows, n_cols) = maze.shape
     n_states = len(states)
-    transition_probability = np.zeros((n_states, n_states))
-    for state in states:
-        n_nes = len(state.neighbours)
-        for ne in state.neighbours:
-            transition_probability[states.index(state), states.index(ne)] = 1 / n_nes  # uniform
-    transition_reward = np.zeros((n_states, n_states))
-    target = State.target_state
-    nes = target.neighbours
-    for ne in nes:
-        transition_reward[states.index(ne), states.index(target)] = 100  # reward for going to / staying at the target!
-
     value_convergence = np.full(n_states, False)
     i = 0
     ax1 = plt.subplot(2, 1, 1)
