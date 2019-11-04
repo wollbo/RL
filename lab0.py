@@ -12,6 +12,10 @@ maze = np.full((n_rows, n_cols), True)
 maze[0:3, 2] = False
 maze[4, 1:6] = False
 
+# maze[7, 3:7] = False
+# maze[7:9, 3] = False
+# maze[7:9, 7] = False
+
 
 class State:
     def __init__(self, index):
@@ -48,6 +52,10 @@ def get_state_values(states, n, m):
 
 def show_state_policies(states):
     # plt.subplot(n, m, i) must come before calling this function
+    ax2.clear()
+    ax2.set_yticklabels([])
+    ax2.set_xticklabels([])
+    ax2.set_xlabel('State policies')
     for state in states:
         other_state = state.neighbours[state.policy]
         x = state.index[1]
@@ -94,13 +102,19 @@ policy_convergence = np.full(n_states, False)
 value_convergence = np.full(n_states, False)
 
 i = 0
+
+ax1 = plt.subplot(2, 1, 1)
+ax2 = plt.subplot(2, 1, 2)
+
+
 while not (all(policy_convergence) and all(value_convergence)):
     print('i={:.0f}'.format(i))
 
     " VALUE UPDATE "
     for state in states:
         value_elements = [transition_probability[states.index(state), states.index(ne)] *
-                          (transition_reward[states.index(state), states.index(ne)] + gamma*ne.value) for ne in state.neighbours]
+                          (transition_reward[states.index(state), states.index(ne)] +
+                           gamma*ne.value) for ne in state.neighbours]
         state.next_value = sum(value_elements)
     for state in states:
         value_convergence[states.index(state)] = state.update_value()
@@ -111,7 +125,8 @@ while not (all(policy_convergence) and all(value_convergence)):
 
     " POLICY UPDATE "
     for state in states:
-        value_elements = [transition_reward[states.index(state), states.index(ne)] + gamma*ne.value for ne in state.neighbours]
+        value_elements = [transition_reward[states.index(state), states.index(ne)] +
+                          gamma*ne.value for ne in state.neighbours]
         state.next_policy = np.argmax(array([value_elements]))
     for state in states:
         policy_convergence[states.index(state)] = state.update_policy()
@@ -123,18 +138,12 @@ while not (all(policy_convergence) and all(value_convergence)):
     values = get_state_values(states, n_rows, n_cols)
     print(values)
 
-    ax1 = plt.subplot(2, 1, 1)
     ax1.matshow(np.log(values))
     ax1.set_xlabel('State values')
-    ax2 = plt.subplot(2, 1, 2)
-    ax2.set_yticklabels([])
-    ax2.set_xticklabels([])
-    ax2.set_xlabel('State policies')
     show_state_policies(states)
     plt.gca().set_aspect('equal')
-    plt.axis([-1, 7, -6, 1])
-
-    plt.pause(0.02)
+    plt.axis([-1, n_cols, -n_rows, 1])
+    plt.pause(0.01)
 
     i += 1
 
