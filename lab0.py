@@ -107,7 +107,7 @@ ax1 = plt.subplot(2, 1, 1)
 ax2 = plt.subplot(2, 1, 2)
 
 
-while not (all(policy_convergence): #  and all(value_convergence)):
+while not (all(policy_convergence) and all(value_convergence)):
     print('i={:.0f}'.format(i))
 
     " VALUE UPDATE "
