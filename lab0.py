@@ -55,7 +55,6 @@ def show_state_policies(states):
     ax2.clear()
     ax2.set_yticklabels([])
     ax2.set_xticklabels([])
-    ax2.set_xlabel('State policies')
     for state in states:
         other_state = state.neighbours[state.policy]
         x = state.index[1]
@@ -106,16 +105,15 @@ i = 0
 ax1 = plt.subplot(2, 1, 1)
 ax2 = plt.subplot(2, 1, 2)
 
-
 while not (all(policy_convergence) and all(value_convergence)):
     print('i={:.0f}'.format(i))
 
     " VALUE UPDATE "
     for state in states:
-        value_elements = [transition_probability[states.index(state), states.index(ne)] *
-                          (transition_reward[states.index(state), states.index(ne)] +
-                           gamma*ne.value) for ne in state.neighbours]
-        state.next_value = sum(value_elements)
+        value_elements = array([transition_probability[states.index(state), states.index(ne)] *
+                                (transition_reward[states.index(state), states.index(ne)] +
+                                 gamma*ne.value) for ne in state.neighbours])
+        state.next_value = np.sum(value_elements)
     for state in states:
         value_convergence[states.index(state)] = state.update_value()
     if all(value_convergence):
@@ -141,6 +139,7 @@ while not (all(policy_convergence) and all(value_convergence)):
     ax1.matshow(np.log(values))
     ax1.set_xlabel('State values')
     show_state_policies(states)
+    ax2.set_xlabel('State policies')
     plt.gca().set_aspect('equal')
     plt.axis([-1, n_cols, -n_rows, 1])
     plt.pause(0.01)
