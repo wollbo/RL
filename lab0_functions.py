@@ -168,17 +168,18 @@ def get_transition_probability(states):
     return transition_probability
 
 
-def get_transition_reward(states, cost2stay, cost2move, target_reward):
+def get_transition_reward(states, reward_staying, reward_moving, reward_target):
     n_states = len(states)
-    transition_reward = np.full((n_states, n_states), cost2move)
+
+    transition_reward = np.full((n_states, n_states), reward_moving)  # general cost of changing states
 
     for i in range(n_states):
-        transition_reward[i, i] = cost2stay     # cost for staying at state (not target)
+        transition_reward[i, i] = reward_staying     # cost for staying at state (not target)
 
     target = State.target_state
     nes = target.neighbours
     for ne in nes:
-        transition_reward[states.index(ne), states.index(target)] = target_reward   # going to / staying at the target
+        transition_reward[states.index(ne), states.index(target)] = reward_target # going to / staying at the target
     return transition_reward
 
 
@@ -224,7 +225,7 @@ def backwards_induction(maze, states, t_horizon, rewards, pause_time):
 
 def plot_shortest_path(start, t_horizon, maze, pause_time):
     (n_rows, n_cols) = maze.shape
-    fig = plt.figure(2)
+    fig = plt.figure()
     fig.suptitle('Shortest path from ' + str(start))
     axis = plt.subplot(1, 1, 1)
     axis.set_yticklabels([])

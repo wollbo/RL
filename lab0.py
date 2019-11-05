@@ -9,11 +9,11 @@ maze = generate_maze()
 
 states = generate_maze_states(maze=maze, th=t_horizon, start_position=start_position, target_position=target_position)
 
-rewards = get_transition_reward(states, cost2move=-1, cost2stay=-1, target_reward=100)
+rewards = get_transition_reward(states, reward_staying=-1, reward_moving=-1, reward_target=100)
 
 backwards_induction(maze, states, t_horizon, rewards, pause_time=0.1)
 
-plot_shortest_path(State.start_state, t_horizon, maze, pause_time=0.2)
+plot_shortest_path(start=State.start_state, t_horizon=t_horizon, maze=maze, pause_time=0.2)
 
 plt.show()
 
