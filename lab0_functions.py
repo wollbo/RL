@@ -7,8 +7,8 @@ np.set_printoptions(precision=2)
 
 class State:
     time_horizon = None     # tba
-    target_state = None     # tba
     start_state = None
+    target_state = None     # tba
 
     def __init__(self, index):
         self.index = index
@@ -20,18 +20,18 @@ class State:
         return str(self.index)
 
 
-class State0:
-    value_tolerance = 1e-10
-    target_state = None         # tba
+class State2:
+    value_tolerance = 1e-3
+    start_state = None
+    target_state = None
 
-    def __init__(self, index, in_maze=True):
+    def __init__(self, index):
         self.index = index
         self.neighbours = []
         self.value = 0
         self.next_value = 0
-        self.action = 0         # index of neighbour to go to!
+        self.action = 0
         self.next_action = 0
-        self.in_maze = in_maze
 
     def __str__(self):
         return 'state: ' + str(self.index)
@@ -41,7 +41,7 @@ class State0:
         self.value = self.next_value                                    # update value
         return no_change
 
-    def update_policy(self):
+    def update_action(self):
         no_change = self.action == self.next_action     # check convergence
         self.action = self.next_action                  # update policy
         return no_change
@@ -50,16 +50,14 @@ class State0:
 def get_state_values(states, t, n, m):
     vm = np.full((n, m), nan)   # vm : value maze
     for state in states:
-        # if state.value[t] != 0:
         vm[state.index] = state.value[t]
     return vm
 
 
-def get_state_values0(states, n, m):
+def get_state_values2(states, n, m):
     vm = np.full((n, m), nan)   # vm : value maze
     for state in states:
-        if state.value != 0 and state.in_maze:
-            vm[state.index] = state.value
+        vm[state.index] = state.value
     return vm
 
 
@@ -87,7 +85,7 @@ def show_state_policies(states, t, axis):
         plot_arrow(state, other_state)
 
 
-def show_state_policies0(states, axis):
+def show_state_policies2(states, axis):
     # plt.subplot(n, m, i) must come before calling this function
     axis.clear()
     axis.set_yticklabels([])
@@ -106,9 +104,9 @@ def generate_maze():
     return maze
 
 
-def generate_maze_states(maze, th, start, target):
+def generate_maze_states(maze, t_horizon, start, target):
     (n_rows, n_cols) = maze.shape
-    State.time_horizon = th
+    State.time_horizon = t_horizon
     states = []
     for row in range(n_rows):
         for col in range(n_cols):
@@ -134,17 +132,20 @@ def generate_maze_states(maze, th, start, target):
     return states
 
 
-def generate_maze_states0(maze):
+def generate_maze_states2(maze, start, target):
     (n_rows, n_cols) = maze.shape
     states = []
     for row in range(n_rows):
         for col in range(n_cols):
             if maze[row, col]:
-                state = State0(index=(row, col))
+                state = State2(index=(row, col))
                 states.append(state)
 
-                if row == 5 and col == 5:
-                    State0.target_state = state
+                if row == start[0] and col == start[1]:
+                    State2.start_state = state
+
+                elif row == target[0] and col == target[1]:
+                    State2.target_state = state
 
     for state in states:
         state.neighbours.append(state)
@@ -168,7 +169,7 @@ def get_transition_probability(states):
     return transition_probability
 
 
-def generate_transition_rewards(states, reward_staying, reward_moving, reward_target):
+def generate_transition_rewards(states, target, reward_staying, reward_moving, reward_target):
     n_states = len(states)
 
     transition_reward = np.full((n_states, n_states), reward_moving)  # general cost of changing states
@@ -176,24 +177,13 @@ def generate_transition_rewards(states, reward_staying, reward_moving, reward_ta
     for i in range(n_states):
         transition_reward[i, i] = reward_staying     # cost for staying at state (not target)
 
-    target = State.target_state
     nes = target.neighbours
     for ne in nes:
         transition_reward[states.index(ne), states.index(target)] = reward_target # going to / staying at the target
     return transition_reward
 
 
-def get_transition_reward0(states):
-    n_states = len(states)
-    transition_reward = np.zeros((n_states, n_states))
-    target = State.target_state
-    nes = target.neighbours
-    for ne in nes:
-        transition_reward[states.index(ne), states.index(target)] = 1   # reward for going to / staying at the target!
-    return transition_reward
-
-
-def backwards_induction(maze, states, t_horizon, rewards, pause_time):
+def backward_induction(maze, states, t_horizon, rewards, pause_time):
     fig = plt.figure()
     fig.suptitle('Backwards Induction')
 
@@ -222,6 +212,8 @@ def backwards_induction(maze, states, t_horizon, rewards, pause_time):
         plt.axis([-1, n_cols, -n_rows, 1])
         plt.pause(pause_time)
 
+    return values
+
 
 def plot_shortest_path(start, t_horizon, maze, pause_time):
     (n_rows, n_cols) = maze.shape
@@ -238,56 +230,11 @@ def plot_shortest_path(start, t_horizon, maze, pause_time):
         plt.axis([-1, n_cols, -n_rows, 1])
         plt.pause(pause_time)
 
-def policy_value_iteration_infinite(maze, states, transition_probability, transition_reward, gamma, pause_time):
-    (n_rows, n_cols) = maze.shape
-    n_states = len(states)
-    policy_convergence = np.full(n_states, False)
-    value_convergence = np.full(n_states, False)
-    i = 0
-    ax1 = plt.subplot(2, 1, 1)
-    ax2 = plt.subplot(2, 1, 2)
-    while not (all(policy_convergence) and all(value_convergence)):
-        print('i={:.0f}'.format(i))
-        " VALUE UPDATE "
-        for state in states:
-            value_elements = array([transition_probability[states.index(state), states.index(ne)] *
-                                    (transition_reward[states.index(state), states.index(ne)] +
-                                     gamma*ne.value) for ne in state.neighbours])
-            state.next_value = np.sum(value_elements)
-        for state in states:
-            value_convergence[states.index(state)] = state.update_value()
-        if all(value_convergence):
-            print('\tvalues: converged')
-        else:
-            print('\tvalues: not converged')
-        " POLICY UPDATE "
-        for state in states:
-            value_elements = [transition_reward[states.index(state), states.index(ne)] +
-                              gamma*ne.value for ne in state.neighbours]
-            state.next_action = np.argmax(array([value_elements]))
-        for state in states:
-            policy_convergence[states.index(state)] = state.update_policy()
-        if all(policy_convergence):
-            print('\tpolicies: converged')
-        else:
-            print('\tpolicies: not converged')
 
-        values = get_state_values0(states, n_rows, n_cols)
-        # print(values)
+def value_iteration(maze, states, rewards, gamma, pause_time):
+    fig = plt.figure()
+    fig.suptitle('Value Iteration')
 
-        ax1.matshow(np.log(values))
-        ax1.set_xlabel('State values')
-        show_state_policies(states, ax2)
-        ax2.set_xlabel('State policies')
-        plt.gca().set_aspect('equal')
-        plt.axis([-1, n_cols, -n_rows, 1])
-        plt.pause(pause_time)
-        i += 1
-
-    # plt.show()
-
-
-def value_iteration_infinite(maze, states, transition_probability, transition_reward, gamma, pause_time):
     (n_rows, n_cols) = maze.shape
     n_states = len(states)
     value_convergence = np.full(n_states, False)
@@ -295,10 +242,9 @@ def value_iteration_infinite(maze, states, transition_probability, transition_re
     ax1 = plt.subplot(2, 1, 1)
     while not all(value_convergence):
         print('i={:.0f}'.format(i))
-        " VALUE ITERATION UPDATE "
+        " VALUE ITERATION "
         for state in states:
-            value_elements = array([transition_probability[states.index(state), states.index(ne)] *
-                                    (transition_reward[states.index(state), states.index(ne)] +
+            value_elements = array([(rewards[states.index(state), states.index(ne)] +
                                      gamma * ne.value) for ne in state.neighbours])
             state.next_value = np.max(value_elements)
         for state in states:
@@ -308,25 +254,73 @@ def value_iteration_infinite(maze, states, transition_probability, transition_re
         else:
             print('\tvalues: not converged')
 
-        values = get_state_values0(states, n_rows, n_cols)
-        # print(values)
-
-        ax1.matshow(np.log(values))
+        values = get_state_values2(states, n_rows, n_cols)
+        ax1.matshow(values)
         ax1.set_xlabel('State values')
         plt.pause(pause_time)
+
         i += 1
 
     for state in states:
-        value_elements = [transition_reward[states.index(state), states.index(ne)] +
+        value_elements = [rewards[states.index(state), states.index(ne)] +
                           gamma * ne.value for ne in state.neighbours]
         state.action = np.argmax(array([value_elements]))
 
     ax2 = plt.subplot(2, 1, 2)
-
-    show_state_policies0(states, ax2)
+    show_state_policies2(states, ax2)
     ax2.set_xlabel('State policies')
     plt.gca().set_aspect('equal')
     plt.axis([-1, n_cols, -n_rows, 1])
     plt.pause(pause_time)
 
-    # plt.show()
+    return values
+
+
+def policy_value_iteration(maze, states, rewards, gamma, pause_time):
+    (n_rows, n_cols) = maze.shape
+    n_states = len(states)
+    action_convergence = np.full(n_states, False)
+    value_convergence = np.full(n_states, False)
+    i = 0
+    fig = plt.figure()
+    fig.suptitle('Policy and Value Iteration')
+    ax1 = plt.subplot(2, 1, 1)
+    ax2 = plt.subplot(2, 1, 2)
+    while not (all(action_convergence) and all(value_convergence)):
+        print('i={:.0f}'.format(i))
+        " VALUE UPDATE "
+        for state in states:
+            next_state = state.neighbours[state.action]     # deterministic
+            state.next_value = rewards[states.index(state), states.index(next_state)] + gamma * next_state.value
+        for state in states:
+            value_convergence[states.index(state)] = state.update_value()
+        if all(value_convergence):
+            print('\tvalues: converged')
+        else:
+            print('\tvalues: not converged')
+        " POLICY UPDATE "
+        for state in states:
+            value_elements = [rewards[states.index(state), states.index(ne)] +
+                              gamma*ne.value for ne in state.neighbours]
+            state.next_action = np.argmax(array([value_elements]))
+        for state in states:
+            action_convergence[states.index(state)] = state.update_action()
+        if all(action_convergence):
+            print('\tpolicies: converged')
+        else:
+            print('\tpolicies: not converged')
+
+        values = get_state_values2(states, n_rows, n_cols)
+        # print(values)
+
+        ax1.matshow(values)
+        ax1.set_xlabel('State values')
+        show_state_policies2(states, ax2)
+        ax2.set_xlabel('State policies')
+        plt.gca().set_aspect('equal')
+        plt.axis([-1, n_cols, -n_rows, 1])
+        plt.pause(pause_time)
+        i += 1
+
+    return values
+
