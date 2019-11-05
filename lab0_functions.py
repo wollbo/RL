@@ -168,7 +168,7 @@ def get_transition_probability(states):
     return transition_probability
 
 
-def get_transition_reward(states, reward_staying, reward_moving, reward_target):
+def generate_transition_rewards(states, reward_staying, reward_moving, reward_target):
     n_states = len(states)
 
     transition_reward = np.full((n_states, n_states), reward_moving)  # general cost of changing states
