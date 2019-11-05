@@ -106,7 +106,7 @@ def generate_maze():
     return maze
 
 
-def generate_maze_states(maze, th, start_position, target_position):
+def generate_maze_states(maze, th, start, target):
     (n_rows, n_cols) = maze.shape
     State.time_horizon = th
     states = []
@@ -116,10 +116,10 @@ def generate_maze_states(maze, th, start_position, target_position):
                 state = State(index=(row, col))
                 states.append(state)
 
-                if row == start_position[0] and col == start_position[1]:
+                if row == start[0] and col == start[1]:
                     State.start_state = state
 
-                elif row == target_position[0] and col == target_position[1]:
+                elif row == target[0] and col == target[1]:
                     State.target_state = state
 
     for state in states:

@@ -3,17 +3,20 @@ from lab0_functions import *
 
 start_position = (0, 0)
 target_position = (5, 5)
-t_horizon = 10
+t_horizon = 15
 
 maze = generate_maze()
 
-states = generate_maze_states(maze=maze, th=t_horizon, start_position=start_position, target_position=target_position)
+states = generate_maze_states(maze=maze, th=t_horizon, start=start_position, target=target_position)
 
-rewards = get_transition_reward(states, reward_staying=-1, reward_moving=-1, reward_target=100)
+rewards = get_transition_reward(states=states, reward_staying=0, reward_moving=-1, reward_target=10)
 
 backwards_induction(maze, states, t_horizon, rewards, pause_time=0.1)
 
 plot_shortest_path(start=State.start_state, t_horizon=t_horizon, maze=maze, pause_time=0.2)
+
+for s in states:
+    print(s.action)
 
 plt.show()
 
