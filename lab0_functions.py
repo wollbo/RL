@@ -2,13 +2,30 @@ import numpy as np
 from numpy import array
 from numpy import nan
 import matplotlib.pyplot as plt
+from matplotlib import rc
+
+rc('font', **{'family': 'serif', 'serif': ['Palatino']})
+rc('text', usetex=True)
+
+SMALL_SIZE = 10
+MEDIUM_SIZE = 12
+BIGGER_SIZE = 14
+
+rc('font', size=SMALL_SIZE)          # controls default text sizes
+rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 np.set_printoptions(precision=2)
 
 
-class State:
-    time_horizon = None     # tba
-    start_state = None
-    target_state = None     # tba
+class State:        # state for finite horizon problems
+    time_horizon = None
+    start = None
+    target = None
 
     def __init__(self, index):
         self.index = index
@@ -20,10 +37,10 @@ class State:
         return str(self.index)
 
 
-class State2:
+class State2:       # state for infinite horizon problems
     value_tolerance = 1e-3
-    start_state = None
-    target_state = None
+    start = None
+    target = None
 
     def __init__(self, index):
         self.index = index
@@ -104,7 +121,7 @@ def generate_maze():
     return maze
 
 
-def generate_maze_states(maze, t_horizon, start, target):
+def generate_maze_states(maze, t_horizon, start=(None, None), target=(None, None)):
     (n_rows, n_cols) = maze.shape
     State.time_horizon = t_horizon
     states = []
@@ -115,10 +132,10 @@ def generate_maze_states(maze, t_horizon, start, target):
                 states.append(state)
 
                 if row == start[0] and col == start[1]:
-                    State.start_state = state
+                    State.start = state
 
                 elif row == target[0] and col == target[1]:
-                    State.target_state = state
+                    State.target = state
 
     for state in states:
         state.neighbours.append(state)
@@ -132,7 +149,7 @@ def generate_maze_states(maze, t_horizon, start, target):
     return states
 
 
-def generate_maze_states2(maze, start, target):
+def generate_maze_states2(maze, start=(None, None), target=(None, None)):
     (n_rows, n_cols) = maze.shape
     states = []
     for row in range(n_rows):
@@ -141,11 +158,11 @@ def generate_maze_states2(maze, start, target):
                 state = State2(index=(row, col))
                 states.append(state)
 
-                if row == start[0] and col == start[1]:
-                    State2.start_state = state
+                if (row, col) == start:
+                    State2.start = state
 
-                elif row == target[0] and col == target[1]:
-                    State2.target_state = state
+                elif (row, col) == target:
+                    State2.target = state
 
     for state in states:
         state.neighbours.append(state)
@@ -159,14 +176,16 @@ def generate_maze_states2(maze, start, target):
     return states
 
 
-def get_transition_probability(states):
+def generate_transitions_rewards2(weights, states):
     n_states = len(states)
-    transition_probability = np.zeros((n_states, n_states))
+    transition_reward = np.zeros((n_states, n_states))
+
     for state in states:
-        n_nes = len(state.neighbours)
         for ne in state.neighbours:
-            transition_probability[states.index(state), states.index(ne)] = 1 / n_nes  # uniform
-    return transition_probability
+            if ne != state:
+                transition_reward[states.index(ne), states.index(state)] = weights[state.index]
+
+    return transition_reward
 
 
 def generate_transition_rewards(states, target, reward_staying, reward_moving, reward_target):
@@ -183,13 +202,15 @@ def generate_transition_rewards(states, target, reward_staying, reward_moving, r
     return transition_reward
 
 
-def backward_induction(maze, states, t_horizon, rewards, pause_time):
-    fig = plt.figure()
-    fig.suptitle('Backwards Induction')
-
+def backward_induction(maze, states, t_horizon, rewards, plot, pause_time):
     (n_rows, n_cols) = maze.shape
-    ax1 = plt.subplot(2, 1, 1)
-    ax2 = plt.subplot(2, 1, 2)
+
+    if plot:
+        fig = plt.figure()
+        fig.suptitle('Backwards Induction, T = {:.0f}'.format(t_horizon))
+        ax1 = plt.subplot(2, 1, 1)
+        ax2 = plt.subplot(2, 1, 2)
+
     " backwards induction "
     for t in range(t_horizon - 1, -1, -1):
         for s in states:
@@ -205,41 +226,69 @@ def backward_induction(maze, states, t_horizon, rewards, pause_time):
             s.value[t] = possible_rewards[s.action[t]]
 
         values = get_state_values(states, t, n_rows, n_cols)
-        ax1.matshow(values)
-        ax1.set_xlabel('State values')
-        show_state_policies(states, t, ax2)
-        ax2.set_xlabel('State policies')
-        plt.axis([-1, n_cols, -n_rows, 1])
-        plt.pause(pause_time)
+        if plot:
+            ax1.matshow(values)
+            ax1.set_xlabel('State values')
+            show_state_policies(states, t, ax2)
+            ax2.set_xlabel('State policies')
+            plt.axis([-1, n_cols, -n_rows, 1])
+            plt.pause(pause_time)
 
     return values
 
 
-def plot_shortest_path(start, t_horizon, maze, pause_time):
-    (n_rows, n_cols) = maze.shape
+def plot_most_rewarding_path(s0, values, pause_time):
+    (n_rows, n_cols) = values.shape
+
+    t_horizon = s0.time_horizon
     fig = plt.figure()
-    fig.suptitle('Shortest path from ' + str(start))
-    axis = plt.subplot(1, 1, 1)
-    axis.set_yticklabels([])
-    axis.set_xticklabels([])
-    s_now = start
+    fig.suptitle('Backward Induction, T={:.0f}'.format(t_horizon))
+    ax1 = plt.subplot(1, 2, 1)
+    ax1.set_xlabel('$V_T^\pi (s)$', labelpad=17)
+    pos = ax1.matshow(values)
+    fig.colorbar(pos, ax=ax1, fraction=0.04)
+    ax2 = plt.subplot(1, 2, 2)
+    ax2.set_xlabel('Most rewarding path')
+
+    ax2.set_yticklabels([])
+    ax2.set_xticklabels([])
     for t in range(t_horizon):
-        s_next = s_now.neighbours[s_now.action[t]]
-        plot_arrow(s_now, s_next)
-        s_now = s_next
+        s1 = s0.neighbours[s0.action[t]]
+        plot_arrow(s0, s1)
+        s0 = s1
         plt.axis([-1, n_cols, -n_rows, 1])
         plt.pause(pause_time)
 
 
-def value_iteration(maze, states, rewards, gamma, pause_time):
+def plot_most_rewarding_policy(states, values, gamma, n):
+    (n_rows, n_cols) = values.shape
     fig = plt.figure()
-    fig.suptitle('Value Iteration')
+    fig.suptitle('Infinite Horizon, '
+                 '$\lambda$ = {:.3f} \n'
+                 'tolerance = {:.0e}, '
+                 'required iterations: {:.0f}'.format(gamma,
+                                                      State2.value_tolerance,
+                                                      n))
+    ax1 = plt.subplot(1, 2, 1)
+    pos = ax1.matshow(values)
+    ax1.set_xlabel('$V_{\lambda}^{\pi} (s)$', labelpad=17)
+    fig.colorbar(pos, ax=ax1, fraction=0.04)
+    ax2 = plt.subplot(1, 2, 2)
+    show_state_policies2(states=states, axis=ax2)
+    ax2.set_xlabel('Most rewarding policy')
+    plt.axis([-1, n_cols, -n_rows, 1])
 
+
+def value_iteration(maze, states, rewards, gamma, plot, pause_time):
     (n_rows, n_cols) = maze.shape
     n_states = len(states)
+    if plot:
+        fig = plt.figure()
+        fig.suptitle('Value Iteration')
+        ax1 = plt.subplot(2, 1, 1)
+
     value_convergence = np.full(n_states, False)
     i = 0
-    ax1 = plt.subplot(2, 1, 1)
     while not all(value_convergence):
         print('i={:.0f}'.format(i))
         " VALUE ITERATION "
@@ -255,9 +304,11 @@ def value_iteration(maze, states, rewards, gamma, pause_time):
             print('\tvalues: not converged')
 
         values = get_state_values2(states, n_rows, n_cols)
-        ax1.matshow(values)
-        ax1.set_xlabel('State values')
-        plt.pause(pause_time)
+
+        if plot:
+            ax1.matshow(values)
+            ax1.set_xlabel('State values')
+            plt.pause(pause_time)
 
         i += 1
 
@@ -266,14 +317,15 @@ def value_iteration(maze, states, rewards, gamma, pause_time):
                           gamma * ne.value for ne in state.neighbours]
         state.action = np.argmax(array([value_elements]))
 
-    ax2 = plt.subplot(2, 1, 2)
-    show_state_policies2(states, ax2)
-    ax2.set_xlabel('State policies')
-    plt.gca().set_aspect('equal')
-    plt.axis([-1, n_cols, -n_rows, 1])
-    plt.pause(pause_time)
+    if plot:
+        ax2 = plt.subplot(2, 1, 2)
+        show_state_policies2(states, ax2)
+        ax2.set_xlabel('State policies')
+        plt.gca().set_aspect('equal')
+        plt.axis([-1, n_cols, -n_rows, 1])
+        plt.pause(pause_time)
 
-    return values
+    return values, gamma, i
 
 
 def policy_value_iteration(maze, states, rewards, gamma, pause_time):
