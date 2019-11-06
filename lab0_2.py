@@ -14,10 +14,9 @@ weights = array([[0, 1, -np.inf, 10, 10, 10, 10],
 
 
 for t_horizon in range(38, 39):
-    pass
     states = generate_maze_states(maze=maze, t_horizon=t_horizon, start=(0, 0))
     rewards = generate_transitions_rewards2(weights=weights, states=states)
-    bi_values = backward_induction(maze=maze, states=states, rewards=rewards, t_horizon=t_horizon, plot=False, pause_time=0.1)
+    bi_values = backward_induction(maze=maze, states=states, rewards=rewards, t_horizon=t_horizon, plot=True, pause_time=0.1)
     plot_most_rewarding_path(State.start, values=bi_values, pause_time=0.01)
 
 
@@ -26,7 +25,7 @@ rewards = generate_transitions_rewards2(weights=weights, states=states)
 (vi_values, gamma, n_iterations) = value_iteration(maze=maze, states=states, rewards=rewards, gamma=0.99, plot=False, pause_time=0.1)
 plot_most_rewarding_policy(states=states, values=vi_values, gamma=gamma, n=n_iterations)
 
-print(bi_values)
+# print(bi_values)
 print(vi_values)
 
 plt.show()

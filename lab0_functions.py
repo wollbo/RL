@@ -206,10 +206,9 @@ def backward_induction(maze, states, t_horizon, rewards, plot, pause_time):
     (n_rows, n_cols) = maze.shape
 
     if plot:
-        fig = plt.figure()
+        fig, (ax1, ax2) = plt.subplots(1, 2)
         fig.suptitle('Backwards Induction, T = {:.0f}'.format(t_horizon))
-        ax1 = plt.subplot(2, 1, 1)
-        ax2 = plt.subplot(2, 1, 2)
+
 
     " backwards induction "
     for t in range(t_horizon - 1, -1, -1):
@@ -241,13 +240,12 @@ def plot_most_rewarding_path(s0, values, pause_time):
     (n_rows, n_cols) = values.shape
 
     t_horizon = s0.time_horizon
-    fig = plt.figure()
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+
     fig.suptitle('Backward Induction, T={:.0f}'.format(t_horizon))
-    ax1 = plt.subplot(1, 2, 1)
     ax1.set_xlabel('$V_T^\pi (s)$', labelpad=17)
     pos = ax1.matshow(values)
     fig.colorbar(pos, ax=ax1, fraction=0.04)
-    ax2 = plt.subplot(1, 2, 2)
     ax2.set_xlabel('Most rewarding path')
 
     ax2.set_yticklabels([])
@@ -262,18 +260,16 @@ def plot_most_rewarding_path(s0, values, pause_time):
 
 def plot_most_rewarding_policy(states, values, gamma, n):
     (n_rows, n_cols) = values.shape
-    fig = plt.figure()
+    fig, (ax1, ax2) = plt.subplots(1, 2)
     fig.suptitle('Infinite Horizon, '
                  '$\lambda$ = {:.3f} \n'
                  'tolerance = {:.0e}, '
                  'required iterations: {:.0f}'.format(gamma,
                                                       State2.value_tolerance,
                                                       n))
-    ax1 = plt.subplot(1, 2, 1)
     pos = ax1.matshow(values)
     ax1.set_xlabel('$V_{\lambda}^{\pi} (s)$', labelpad=17)
     fig.colorbar(pos, ax=ax1, fraction=0.04)
-    ax2 = plt.subplot(1, 2, 2)
     show_state_policies2(states=states, axis=ax2)
     ax2.set_xlabel('Most rewarding policy')
     plt.axis([-1, n_cols, -n_rows, 1])
@@ -283,9 +279,8 @@ def value_iteration(maze, states, rewards, gamma, plot, pause_time):
     (n_rows, n_cols) = maze.shape
     n_states = len(states)
     if plot:
-        fig = plt.figure()
+        fig, (ax1, ax2) = plt.subplots(1, 2)
         fig.suptitle('Value Iteration')
-        ax1 = plt.subplot(2, 1, 1)
 
     value_convergence = np.full(n_states, False)
     i = 0
@@ -318,7 +313,6 @@ def value_iteration(maze, states, rewards, gamma, plot, pause_time):
         state.action = np.argmax(array([value_elements]))
 
     if plot:
-        ax2 = plt.subplot(2, 1, 2)
         show_state_policies2(states, ax2)
         ax2.set_xlabel('State policies')
         plt.gca().set_aspect('equal')
@@ -334,10 +328,9 @@ def policy_value_iteration(maze, states, rewards, gamma, pause_time):
     action_convergence = np.full(n_states, False)
     value_convergence = np.full(n_states, False)
     i = 0
-    fig = plt.figure()
+    fig, (ax1, ax2) = plt.subplots(1, 2)
     fig.suptitle('Policy and Value Iteration')
-    ax1 = plt.subplot(2, 1, 1)
-    ax2 = plt.subplot(2, 1, 2)
+
     while not (all(action_convergence) and all(value_convergence)):
         print('i={:.0f}'.format(i))
         " VALUE UPDATE "
