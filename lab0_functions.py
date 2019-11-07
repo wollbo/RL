@@ -11,18 +11,18 @@ SMALL_SIZE = 10
 MEDIUM_SIZE = 12
 BIGGER_SIZE = 14
 
-rc('font', size=SMALL_SIZE)          # controls default text sizes
-rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+rc('font', size=SMALL_SIZE)  # controls default text sizes
+rc('axes', titlesize=SMALL_SIZE)  # fontsize of the axes title
+rc('axes', labelsize=MEDIUM_SIZE)  # fontsize of the x and y labels
+rc('xtick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
 rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 np.set_printoptions(precision=2)
 
 
-class State:        # state for finite horizon problems
+class State:  # state for finite horizon problems
     time_horizon = None
     start = None
     target = None
@@ -31,15 +31,15 @@ class State:        # state for finite horizon problems
         self.index = index
         self.neighbours = []
         self.value = np.zeros(self.time_horizon)
-        self.action = np.zeros(self.time_horizon, dtype=np.uint8)   # local index of best neighbour to go to at time t
+        self.action = np.zeros(self.time_horizon, dtype=np.uint8)  # local index of best neighbour to go to at time t
 
     def __str__(self):
         return str(self.index)
 
 
-class State2:       # state for infinite horizon problems
-    precision = None    # epsilon
-    discount = None     # lambda
+class State2:  # state for infinite horizon problems
+    precision = None  # epsilon
+    discount = None  # lambda
     start = None
     target = None
 
@@ -55,28 +55,28 @@ class State2:       # state for infinite horizon problems
         return 'state: ' + str(self.index)
 
     def value_tolerance(self):  # delta
-        return self.precision*(1-self.discount)/self.discount
+        return self.precision * (1 - self.discount) / self.discount
 
     def update_value(self):
-        no_change = np.abs(self.value - self.next_value) <= self.value_tolerance()        # check convergence
-        self.value = self.next_value                                    # update value
+        no_change = np.abs(self.value - self.next_value) <= self.value_tolerance()  # check convergence
+        self.value = self.next_value  # update value
         return no_change
 
     def update_action(self):
-        no_change = self.action == self.next_action     # check convergence
-        self.action = self.next_action                  # update policy
+        no_change = self.action == self.next_action  # check convergence
+        self.action = self.next_action  # update policy
         return no_change
 
 
 def get_state_values(states, t, n, m):
-    vm = np.full((n, m), nan)   # vm : value maze
+    vm = np.full((n, m), nan)  # vm : value maze
     for state in states:
         vm[state.index] = state.value[t]
     return vm
 
 
 def get_state_values2(states, n, m):
-    vm = np.full((n, m), nan)   # vm : value maze
+    vm = np.full((n, m), nan)  # vm : value maze
     for state in states:
         vm[state.index] = state.value
     return vm
@@ -200,11 +200,11 @@ def generate_transition_rewards(states, target, reward_staying, reward_moving, r
     transition_reward = np.full((n_states, n_states), reward_moving)  # general cost of changing states
 
     for i in range(n_states):
-        transition_reward[i, i] = reward_staying     # cost for staying at state (not target)
+        transition_reward[i, i] = reward_staying  # cost for staying at state (not target)
 
     nes = target.neighbours
     for ne in nes:
-        transition_reward[states.index(ne), states.index(target)] = reward_target # going to / staying at the target
+        transition_reward[states.index(ne), states.index(target)] = reward_target  # going to / staying at the target
     return transition_reward
 
 
@@ -230,53 +230,16 @@ def backward_induction(maze, states, t_horizon, rewards, plot, pause_time):
 
         values = get_state_values(states, t, n_rows, n_cols)
         if plot:
-            fig.suptitle('Backwards Induction, T = {:.0f}/{:.0f}'.format(t_horizon-t, t_horizon))
+            fig.suptitle('Backwards Induction\nT = {:.0f}'.format(t_horizon))
 
             ax1.matshow(values)
             ax1.set_xlabel('State values')
             show_state_policies(states, t, ax2)
-            ax2.set_xlabel('State policies')
+            ax2.set_xlabel('State policies at t = T-{:.0f} = {:.0f}'.format(t_horizon - t, t))
             plt.axis([-1, n_cols, -n_rows, 1])
             plt.pause(pause_time)
 
     return values
-
-
-def plot_most_rewarding_path(s0, values, pause_time):
-    (n_rows, n_cols) = values.shape
-
-    t_horizon = s0.time_horizon
-    fig, (ax1, ax2) = plt.subplots(1, 2)
-
-    fig.suptitle('Backward Induction, T={:.0f}'.format(t_horizon))
-    ax1.set_xlabel('$V_T^\pi (s)$', labelpad=17)
-    pos = ax1.matshow(values)
-    fig.colorbar(pos, ax=ax1, fraction=0.04)
-    ax2.set_xlabel('Most rewarding path')
-
-    ax2.set_yticklabels([])
-    ax2.set_xticklabels([])
-    for t in range(t_horizon):
-        s1 = s0.neighbours[s0.action[t]]
-        plot_arrow(s0, s1)
-        s0 = s1
-        plt.axis([-1, n_cols, -n_rows, 1])
-        plt.pause(pause_time)
-
-
-def plot_most_rewarding_policy(states, values, n, algorithm):
-    gamma = State2.discount
-    (n_rows, n_cols) = values.shape
-    fig, (ax1, ax2) = plt.subplots(1, 2)
-    fig.suptitle(algorithm +
-                 '\ndiscount $\lambda$ = {:.2f}, '
-                 'required iterations: {:.0f}'.format(gamma, n))
-    pos = ax1.matshow(values)
-    ax1.set_xlabel('$V_{\lambda}^{\pi} (s)$', labelpad=17)
-    fig.colorbar(pos, ax=ax1, fraction=0.04)
-    show_state_policies2(states=states, axis=ax2)
-    ax2.set_xlabel('Most rewarding policy')
-    plt.axis([-1, n_cols, -n_rows, 1])
 
 
 def value_iteration(maze, states, rewards, plot, pause_time):
@@ -360,7 +323,7 @@ def policy_iteration(maze, states, rewards, plot, pause_time):
         " POLICY UPDATE "
         for state in states:
             value_elements = [rewards[states.index(state), states.index(ne)] +
-                              gamma*ne.value for ne in state.neighbours]
+                              gamma * ne.value for ne in state.neighbours]
             state.next_action = np.argmax(array([value_elements]))
         for state in states:
             action_convergence[states.index(state)] = state.update_action()
@@ -369,8 +332,10 @@ def policy_iteration(maze, states, rewards, plot, pause_time):
         else:
             print('\tpolicies: not converged')
 
-        values = get_state_values2(states, n_rows, n_cols)
+        i += 1
+
         if plot:
+            values = get_state_values2(states, n_rows, n_cols)
             ax1.matshow(values)
             ax1.set_xlabel('State values')
             show_state_policies2(states, ax2)
@@ -378,7 +343,43 @@ def policy_iteration(maze, states, rewards, plot, pause_time):
             plt.gca().set_aspect('equal')
             plt.axis([-1, n_cols, -n_rows, 1])
             plt.pause(pause_time)
-        i += 1
 
+    values = get_state_values2(states, n_rows, n_cols)
     return values, i
 
+
+def plot_most_rewarding_path(s0, values, pause_time):
+    (n_rows, n_cols) = values.shape
+
+    t_horizon = s0.time_horizon
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+
+    fig.suptitle('Backward Induction\nT={:.0f}'.format(t_horizon))
+    ax1.set_xlabel('$V_T^\pi (s)$', labelpad=17)
+    pos = ax1.matshow(values)
+    fig.colorbar(pos, ax=ax1, fraction=0.04)
+    ax2.set_xlabel('Most rewarding path')
+
+    ax2.set_yticklabels([])
+    ax2.set_xticklabels([])
+    for t in range(t_horizon):
+        s1 = s0.neighbours[s0.action[t]]
+        plot_arrow(s0, s1)
+        s0 = s1
+        plt.axis([-1, n_cols, -n_rows, 1])
+        plt.pause(pause_time)
+
+
+def plot_most_rewarding_policy(states, values, n, algorithm):
+    gamma = State2.discount
+    (n_rows, n_cols) = values.shape
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    fig.suptitle(algorithm +
+                 '\ndiscount $\lambda$ = {:.2f}, '
+                 'required iterations: {:.0f}'.format(gamma, n))
+    pos = ax1.matshow(values)
+    ax1.set_xlabel('$V_{\lambda}^{\pi} (s)$', labelpad=17)
+    fig.colorbar(pos, ax=ax1, fraction=0.04)
+    show_state_policies2(states=states, axis=ax2)
+    ax2.set_xlabel('Most rewarding policy')
+    plt.axis([-1, n_cols, -n_rows, 1])

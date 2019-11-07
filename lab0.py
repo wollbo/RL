@@ -5,14 +5,14 @@ from lab0_functions import *
 
 start_position = (0, 0)
 target_position = (5, 5)
-t_horizon = 12
+t_horizon = 40
 discount = 0.95
 precision = 1e-2
 
 maze = generate_maze()
 
 states = generate_maze_states(maze=maze, t_horizon=t_horizon, start=start_position, target=target_position)
-rewards = generate_transition_rewards(states=states, target=State.target, reward_staying=0, reward_moving=-1, reward_target=12)
+rewards = generate_transition_rewards(states=states, target=State.target, reward_staying=0, reward_moving=-1, reward_target=1)
 bi_values = backward_induction(maze=maze, states=states, t_horizon=t_horizon, rewards=rewards, plot=False, pause_time=0.1)
 plot_most_rewarding_path(s0=State.start, values=bi_values, pause_time=0.1)
 

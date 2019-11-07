@@ -9,7 +9,7 @@ start_position = (0, 0)
 target_position = (5, 5)
 t_horizon = 12
 discount = 0.99
-precision = 1e-2
+precision = 1
 
 weights = array([[0, 1, -np.inf, 10, 10, 10, 10],
                  [0, 1, -np.inf, 10, 0, 0, 10],
@@ -22,7 +22,7 @@ weights = array([[0, 1, -np.inf, 10, 10, 10, 10],
 for t_horizon in range(38, 39):
     states = generate_maze_states(maze=maze, t_horizon=t_horizon, start=(0, 0))
     rewards = generate_transitions_rewards2(weights=weights, states=states)
-    bi_values = backward_induction(maze=maze, states=states, rewards=rewards, t_horizon=t_horizon, plot=False, pause_time=0.1)
+    bi_values = backward_induction(maze=maze, states=states, rewards=rewards, t_horizon=t_horizon, plot=True, pause_time=0.5)
     plot_most_rewarding_path(State.start, values=bi_values, pause_time=0.01)
 
 
@@ -37,8 +37,11 @@ rewards = generate_transitions_rewards2(weights=weights, states=states)
 plot_most_rewarding_policy(states=states, values=vi_values, n=n_iterations, algorithm='Policy Iteration')
 
 
+print('Backwards Induction solution')
 print(bi_values)
+print('Value Iteration solution')
 print(vi_values)
+print('Policy Iteration solution')
 print(pi_values)
 
 plt.show()
