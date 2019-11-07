@@ -213,9 +213,9 @@ def value_iteration(maze, states, rewards, plot, pause_time):
         fig, (ax1, ax2) = plt.subplots(1, 2)
         fig.suptitle('Value Iteration')
 
-    value_convergence = np.full(n_states, False)
+    value_error = np.full(n_states, 1)
     i = 0
-    while not all(value_convergence):
+    while np.linalg.norm(value_error) >= states[0].value_tolerance():
         print('i={:.0f}'.format(i))
         " VALUE ITERATION "
         for state in states:
@@ -223,7 +223,7 @@ def value_iteration(maze, states, rewards, plot, pause_time):
                                      gamma * ne.value) for ne in state.neighbours])
             state.next_value = np.max(value_elements)
         for state in states:
-            value_convergence[states.index(state)] = state.update_value()
+            value_error[states.index(state)] = state.update_value()
         if all(value_convergence):
             print('\tvalues: converged')
         else:

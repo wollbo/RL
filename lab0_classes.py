@@ -1,6 +1,7 @@
 from numpy.random import choice
 import numpy as np
 
+
 class State:  # state for finite horizon problems
     time_horizon = None
     start = None
@@ -41,9 +42,9 @@ class State2:  # state for infinite horizon problems
         return self.precision * (1 - self.discount) / self.discount
 
     def update_value(self):
-        no_change = np.abs(self.value - self.next_value) <= self.value_tolerance()  # check convergence
+        error = np.abs(self.value - self.next_value)   # check convergence
         self.value = self.next_value  # update value
-        return no_change
+        return error
 
     def update_action(self):
         no_change = self.action == self.next_action  # check convergence
@@ -56,7 +57,6 @@ class Reward:
         self.n = len(states)
         self.matrix = np.full((self.n, self.n), reward_moving)
         self.deterministic = np.full((self.n, self.n), True)
-        self.states = states
         self.to_r1 = []     # indices of transitions going to r1
         self.to_r2 = []     # indices of transitions going to r2
 
@@ -79,10 +79,24 @@ class Reward:
             return self.matrix[indices]
         else:
             if indices in self.to_r1:
-                # rr = choice([-1, -7], 1, p=[0.5, 0.5])[0]
-                # print('Random reward at r1:')
-                # print(rr)
-                return choice([-1, -7], 1, p=[0.5, 0.5])[0]
+                return choice([-1, -70], 1, p=[0.2, 0.8])[0]
             elif indices in self.to_r2:
                 return choice([-1, -2], 1, p=[0.5, 0.5])[0]
+
+
+class Reward2:
+    def __init__(self, states, weights):
+        self.n = len(states)
+        self.matrix = np.full((self.n, self.n), 0, dtype=np.float)
+
+        for state in states:
+            for ne in state.neighbours:
+                if ne != state:
+                    self.matrix[states.index(ne), states.index(state)] = weights[state.index]
+
+    def __getitem__(self, indices):
+        return self.matrix[indices]
+
+    def __str__(self):
+        return str(self.matrix)
 
