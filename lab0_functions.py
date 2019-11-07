@@ -1,8 +1,11 @@
+from lab0_classes import *
+
 import numpy as np
 from numpy import array
 from numpy import nan
 import matplotlib.pyplot as plt
 from matplotlib import rc
+from numpy.random import choice
 
 rc('font', **{'family': 'serif', 'serif': ['Palatino']})
 rc('text', usetex=True)
@@ -20,52 +23,6 @@ rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
 rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 np.set_printoptions(precision=2)
-
-
-class State:  # state for finite horizon problems
-    time_horizon = None
-    start = None
-    target = None
-
-    def __init__(self, index):
-        self.index = index
-        self.neighbours = []
-        self.value = np.zeros(self.time_horizon)
-        self.action = np.zeros(self.time_horizon, dtype=np.uint8)  # local index of best neighbour to go to at time t
-
-    def __str__(self):
-        return str(self.index)
-
-
-class State2:  # state for infinite horizon problems
-    precision = None  # epsilon
-    discount = None  # lambda
-    start = None
-    target = None
-
-    def __init__(self, index):
-        self.index = index
-        self.neighbours = []
-        self.value = 0
-        self.next_value = 0
-        self.action = 0
-        self.next_action = 0
-
-    def __str__(self):
-        return 'state: ' + str(self.index)
-
-    def value_tolerance(self):  # delta
-        return self.precision * (1 - self.discount) / self.discount
-
-    def update_value(self):
-        no_change = np.abs(self.value - self.next_value) <= self.value_tolerance()  # check convergence
-        self.value = self.next_value  # update value
-        return no_change
-
-    def update_action(self):
-        no_change = self.action == self.next_action  # check convergence
-        self.action = self.next_action  # update policy
-        return no_change
 
 
 def get_state_values(states, t, n, m):
@@ -125,7 +82,7 @@ def generate_maze():
     return maze
 
 
-def generate_maze_states(maze, t_horizon, start=(None, None), target=(None, None)):
+def generate_maze_states(maze, t_horizon, start=(None, None), target=(None, None), r1=(None, None), r2=(None, None)):
     (n_rows, n_cols) = maze.shape
     State.time_horizon = t_horizon
     states = []
@@ -135,11 +92,14 @@ def generate_maze_states(maze, t_horizon, start=(None, None), target=(None, None
                 state = State(index=(row, col))
                 states.append(state)
 
-                if row == start[0] and col == start[1]:
+                if (row, col) == start:
                     State.start = state
-
-                elif row == target[0] and col == target[1]:
+                elif (row, col) == target:
                     State.target = state
+                elif (row, col) == r1:
+                    State.r1 = state
+                elif (row, col) == r2:
+                    State.r2 = state
 
     for state in states:
         state.neighbours.append(state)
@@ -153,7 +113,7 @@ def generate_maze_states(maze, t_horizon, start=(None, None), target=(None, None
     return states
 
 
-def generate_maze_states2(maze, start=(None, None), target=(None, None), discount=0.99, precision=1e-3):
+def generate_maze_states2(maze, start=(None, None), target=(None, None), r1=(None, None), r2=(None, None), discount=0.99, precision=1e-3):
     State2.precision = precision
     State2.discount = discount
     (n_rows, n_cols) = maze.shape
@@ -166,9 +126,12 @@ def generate_maze_states2(maze, start=(None, None), target=(None, None), discoun
 
                 if (row, col) == start:
                     State2.start = state
-
                 elif (row, col) == target:
                     State2.target = state
+                elif (row, col) == r1:
+                    State2.r1 = state
+                elif (row, col) == r2:
+                    State2.r2 = state
 
     for state in states:
         state.neighbours.append(state)
@@ -180,21 +143,6 @@ def generate_maze_states2(maze, start=(None, None), target=(None, None), discoun
                     other_state.index[1] - state.index[1]) == 1:
                 state.neighbours.append(other_state)  # same column neighbours
     return states
-
-
-class Reward:
-    def __init__(self, states, target, reward_staying, reward_moving, reward_target):
-        self.n = len(states)
-        self.matrix = np.full((self.n, self.n), reward_moving)
-
-        for i in range(self.n):
-            self.matrix[i, i] = reward_staying
-
-        for ne in target.neighbours:
-            self.matrix[states.index(ne), states.index(target)] = reward_target
-
-    def __getitem__(self, indices):
-        return self.matrix[indices]
 
 
 def generate_transition_rewards(states, target, reward_staying, reward_moving, reward_target):
@@ -233,14 +181,14 @@ def backward_induction(maze, states, t_horizon, rewards, plot, pause_time):
     for t in range(t_horizon - 1, -1, -1):
         for s in states:
             possible_actions = [states.index(ne) for ne in s.neighbours]  # index of possible next states
-            possible_rewards = rewards[states.index(s), possible_actions]  # reward for going to the next state
+            possible_rewards = array([rewards[states.index(s), action] for action in possible_actions]) # reward for going to the next state
 
-            if t == t_horizon - 1:
+            if t == t_horizon - 1:  # first step
                 pass
-            else:
+            else:                   # other steps
                 possible_rewards = possible_rewards + [ne.value[t + 1] for ne in s.neighbours]  # next state reward
 
-            s.action[t] = np.argmax(possible_rewards)
+            s.action[t] = np.argmax(array(possible_rewards))
             s.value[t] = possible_rewards[s.action[t]]
 
         values = get_state_values(states, t, n_rows, n_cols)
