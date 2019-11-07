@@ -19,29 +19,33 @@ weights = array([[0, 1, -np.inf, 10, 10, 10, 10],
                  [0, 0, 0, 0, 0, 11, 10]])
 
 
-for t_horizon in range(38, 39):
-    states = generate_maze_states(maze=maze, t_horizon=t_horizon, start=(0, 0))
-    rewards = generate_transitions_rewards2(weights=weights, states=states)
-    bi_values = backward_induction(maze=maze, states=states, rewards=rewards, t_horizon=t_horizon, plot=True, pause_time=0.5)
-    plot_most_rewarding_path(State.start, values=bi_values, pause_time=0.01)
+states = generate_maze_states(maze=maze, t_horizon=10, start=start_position, target=target_position)
+rew = Reward(states, target=State.target, reward_staying=0, reward_moving=-1, reward_target=20)
+print(rew[0, 1])
+
+# for t_horizon in range(38, 39):
+#     states = generate_maze_states(maze=maze, t_horizon=t_horizon, start=(0, 0))
+#     rewards = generate_transitions_rewards2(weights=weights, states=states)
+#     bi_values = backward_induction(maze=maze, states=states, rewards=rewards, t_horizon=t_horizon, plot=True, pause_time=0.5)
+#     plot_most_rewarding_path(State.start, values=bi_values, pause_time=0.01)
+#
+#
+# states = generate_maze_states2(maze=maze, start=start_position, target=target_position, discount=discount, precision=precision)
+# rewards = generate_transitions_rewards2(weights=weights, states=states)
+# (vi_values, n_iterations) = value_iteration(maze=maze, states=states, rewards=rewards, plot=False, pause_time=0.1)
+# plot_most_rewarding_policy(states=states, values=vi_values, n=n_iterations, algorithm='Value Iteration')
+#
+# states = generate_maze_states2(maze=maze, start=start_position, target=target_position, discount=discount, precision=precision)
+# rewards = generate_transitions_rewards2(weights=weights, states=states)
+# (pi_values, n_iterations) = policy_iteration(maze=maze, states=states, rewards=rewards, plot=False, pause_time=0.1)
+# plot_most_rewarding_policy(states=states, values=vi_values, n=n_iterations, algorithm='Policy Iteration')
 
 
-states = generate_maze_states2(maze=maze, start=start_position, target=target_position, discount=discount, precision=precision)
-rewards = generate_transitions_rewards2(weights=weights, states=states)
-(vi_values, n_iterations) = value_iteration(maze=maze, states=states, rewards=rewards, plot=False, pause_time=0.1)
-plot_most_rewarding_policy(states=states, values=vi_values, n=n_iterations, algorithm='Value Iteration')
-
-states = generate_maze_states2(maze=maze, start=start_position, target=target_position, discount=discount, precision=precision)
-rewards = generate_transitions_rewards2(weights=weights, states=states)
-(pi_values, n_iterations) = policy_iteration(maze=maze, states=states, rewards=rewards, plot=False, pause_time=0.1)
-plot_most_rewarding_policy(states=states, values=vi_values, n=n_iterations, algorithm='Policy Iteration')
-
-
-print('Backwards Induction solution')
-print(bi_values)
-print('Value Iteration solution')
-print(vi_values)
-print('Policy Iteration solution')
-print(pi_values)
-
-plt.show()
+# print('Backwards Induction solution')
+# print(bi_values)
+# print('Value Iteration solution')
+# print(vi_values)
+# print('Policy Iteration solution')
+# print(pi_values)
+#
+# plt.show()

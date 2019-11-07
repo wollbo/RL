@@ -182,16 +182,19 @@ def generate_maze_states2(maze, start=(None, None), target=(None, None), discoun
     return states
 
 
-def generate_transitions_rewards2(weights, states):
-    n_states = len(states)
-    transition_reward = np.zeros((n_states, n_states))
+class Reward:
+    def __init__(self, states, target, reward_staying, reward_moving, reward_target):
+        self.n = len(states)
+        self.matrix = np.full((self.n, self.n), reward_moving)
 
-    for state in states:
-        for ne in state.neighbours:
-            if ne != state:
-                transition_reward[states.index(ne), states.index(state)] = weights[state.index]
+        for i in range(self.n):
+            self.matrix[i, i] = reward_staying
 
-    return transition_reward
+        for ne in target.neighbours:
+            self.matrix[states.index(ne), states.index(target)] = reward_target
+
+    def __getitem__(self, indices):
+        return self.matrix[indices]
 
 
 def generate_transition_rewards(states, target, reward_staying, reward_moving, reward_target):
@@ -205,6 +208,18 @@ def generate_transition_rewards(states, target, reward_staying, reward_moving, r
     nes = target.neighbours
     for ne in nes:
         transition_reward[states.index(ne), states.index(target)] = reward_target  # going to / staying at the target
+    return transition_reward
+
+
+def generate_transitions_rewards2(weights, states):
+    n_states = len(states)
+    transition_reward = np.zeros((n_states, n_states))
+
+    for state in states:
+        for ne in state.neighbours:
+            if ne != state:
+                transition_reward[states.index(ne), states.index(state)] = weights[state.index]
+
     return transition_reward
 
 
