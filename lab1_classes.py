@@ -6,13 +6,18 @@ from lab0_functions import plot_arrow
 
 
 class StateSpace:       # state space for finite horizon problems
-    def __init__(self, maze, time_horizon, exit):
+    def __init__(self, maze, time_horizon, entry, exit, minotaur_can_stand_still=False):
         (n_rows, n_cols) = maze.shape
         self.maze = maze
-        self.initial_state = None
+        self.entry = entry
         self.exit = exit
+        self.minotaur_can_stand_still = minotaur_can_stand_still
+
         self.maze_shape = (n_rows, n_cols)
         self.time_horizon = time_horizon
+
+        # state where player is at the entry and minotaur is at the exit
+        self.initial_state = None   # initialized in generate_states
 
         self.player_state_count = count(0)
         self.player_states = []
@@ -26,6 +31,8 @@ class StateSpace:       # state space for finite horizon problems
         self.states = []
         self.minotaur_states_for_given_player_state = []
         self.generate_states()
+
+        print('States generated.')
 
     def __len__(self):
         return len(self.states)
@@ -69,14 +76,13 @@ class StateSpace:       # state space for finite horizon problems
                               minotaur=copy.deepcopy(minotaur_state),
                               time_horizon=self.time_horizon)
 
-                if state.player.position == (0, 0) and state.minotaur.position == (6, 5):
+                if state.player.position == self.entry and state.minotaur.position == self.exit:
                     self.initial_state = state
 
                 self.states.append(state)
 
                 minotaur_states_for_this_player_state.append(state)
             self.minotaur_states_for_given_player_state.append(minotaur_states_for_this_player_state)
-
 
     def generate_player_states(self):
         (n_rows, n_cols) = self.maze_shape
@@ -108,7 +114,10 @@ class StateSpace:       # state space for finite horizon problems
                 self.minotaur_states.append(state)
 
         for state in self.minotaur_states:
-            # state.neighbours.append(state)  # minotaur can not stand still
+
+            if self.minotaur_can_stand_still:   # minotaur can not stand still ?
+                state.neighbours.append(state)
+
             for other_state in self.minotaur_states:
                 if np.abs(other_state.position[0] - state.position[0]) == 1 and np.abs(
                         other_state.position[1] - state.position[1]) == 0:
