@@ -30,26 +30,6 @@ def plot_arrow(s, s_next):
     plt.gca().set_aspect('equal')
 
 
-# def show_state_policies(states, t, axis):
-#     # plt.subplot(n, m, i) must come before calling this function
-#     axis.clear()
-#     axis.set_yticklabels([])
-#     axis.set_xticklabels([])
-#     for state in states:
-#         other_state = state.neighbours[state.action[t]]
-#         plot_arrow(state, other_state)
-
-
-# def show_state_policies2(states, axis):
-#     # plt.subplot(n, m, i) must come before calling this function
-#     axis.clear()
-#     axis.set_yticklabels([])
-#     axis.set_xticklabels([])
-#     for state in states:
-#         other_state = state.neighbours[state.action]
-#         plot_arrow(state, other_state)
-
-
 def generate_maze():
     n_rows = 6
     n_cols = 7

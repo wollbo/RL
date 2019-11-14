@@ -3,6 +3,7 @@ import numpy as np
 from itertools import count
 from lab0_functions import plot_arrow
 
+
 class StateSpace:       # state space for finite horizon problems
     def __init__(self, maze, time_horizon,
                  start=(None, None), target=(None, None),
