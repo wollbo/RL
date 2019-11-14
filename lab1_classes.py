@@ -1,14 +1,16 @@
 from numpy.random import choice
 import numpy as np
 from itertools import count
+import copy
 from lab0_functions import plot_arrow
 
 
 class StateSpace:       # state space for finite horizon problems
-    def __init__(self, maze, time_horizon,
-                 start=(None, None), target=(None, None)):
+    def __init__(self, maze, time_horizon, exit):
         (n_rows, n_cols) = maze.shape
         self.maze = maze
+        self.initial_state = None
+        self.exit = exit
         self.maze_shape = (n_rows, n_cols)
         self.time_horizon = time_horizon
 
@@ -22,6 +24,7 @@ class StateSpace:       # state space for finite horizon problems
 
         self.state_count = count(0)
         self.states = []
+        self.minotaur_states_for_given_player_state = []
         self.generate_states()
 
     def __len__(self):
@@ -30,14 +33,50 @@ class StateSpace:       # state space for finite horizon problems
     def __getitem__(self, index):
         return self.states[index]
 
+    def values(self, t):
+        values = np.empty(len(self.states))
+        for s in self.states:
+            values[s.id] = s.value[t]
+        return values
+
+    def possible_next_states(self, state, action):  # j \in S
+
+        if state.minotaur.position == state.player.position:
+            possible_next_states = [state]
+
+        elif state.player.position == self.exit:
+            possible_next_states = [state]
+
+        else:
+            next_player_state = state.player.neighbours[action]
+            possible_subset = self.minotaur_states_for_given_player_state[next_player_state.id]
+            current_minotaur = state.minotaur
+            possible_next_states = []
+
+            for next_state in possible_subset:
+                for neighbouring_minotaur in current_minotaur.neighbours:
+                    if next_state.minotaur.position == neighbouring_minotaur.position:
+                        possible_next_states.append(next_state)
+
+        return possible_next_states
+
     def generate_states(self):
         for player_state in self.player_states:
+            minotaur_states_for_this_player_state = []
             for minotaur_state in self.minotaur_states:
                 state = State(id=next(self.state_count),
-                              player=player_state,
-                              minotaur=minotaur_state,
+                              player=copy.deepcopy(player_state),
+                              minotaur=copy.deepcopy(minotaur_state),
                               time_horizon=self.time_horizon)
+
+                if state.player.position == (0, 0) and state.minotaur.position == (6, 5):
+                    self.initial_state = state
+
                 self.states.append(state)
+
+                minotaur_states_for_this_player_state.append(state)
+            self.minotaur_states_for_given_player_state.append(minotaur_states_for_this_player_state)
+
 
     def generate_player_states(self):
         (n_rows, n_cols) = self.maze_shape
@@ -46,7 +85,8 @@ class StateSpace:       # state space for finite horizon problems
                 if self.maze[row, col]:
                     state = Player(id=next(self.player_state_count),
                                    position=(row, col),
-                                   time_horizon=self.time_horizon)
+                                   time_horizon=self.time_horizon,
+                                   exit=self.exit)
                     self.player_states.append(state)
 
         for state in self.player_states:
@@ -64,7 +104,7 @@ class StateSpace:       # state space for finite horizon problems
         for row in range(n_rows):
             for col in range(n_cols):
                 state = Minotaur(id=next(self.minotaur_state_count),
-                                      position=(row, col))
+                                 position=(row, col))
                 self.minotaur_states.append(state)
 
         for state in self.minotaur_states:
@@ -78,21 +118,6 @@ class StateSpace:       # state space for finite horizon problems
                     state.neighbours.append(other_state)  # same column neighbours
 
 
-class Player:
-    def __init__(self, id, position, time_horizon):
-        self.id = id
-        self.position = position
-        self.neighbours = []
-        self.action = np.zeros(time_horizon, dtype=np.uint8)  # local index of best neighbour to go to at time t
-
-
-class Minotaur:
-    def __init__(self, id, position):
-        self.id = id
-        self.position = position
-        self.neighbours = []
-
-
 class State:  # state for finite horizon problems
     def __init__(self, id, player, minotaur, time_horizon):
         self.id = id
@@ -101,42 +126,48 @@ class State:  # state for finite horizon problems
         self.neighbours = []
         self.value = np.zeros(time_horizon)
 
+        self.losing = False     # TODO
+        self.winning = False    # TODO
 
     def __str__(self):
-        return str(self.index)
+        return str(self.player) + '\n' + str(self.minotaur)
 
 
-class Reward:       # shortest path rewards
-    def __init__(self, states, reward_staying, reward_moving, reward_target):
-        self.n = len(states)
-        self.matrix = np.full((self.n, self.n), reward_moving)
-        self.deterministic = np.full((self.n, self.n), True)
-        self.to_r1 = []  # indices of transitions going to r1
-        self.to_r2 = []  # indices of transitions going to r2
+class Player:
+    def __init__(self, id, position, time_horizon, exit):
+        self.id = id
+        self.position = position
+        self.neighbours = []
+        self.action = np.zeros(time_horizon, dtype=np.uint8)  # local index of best neighbour to go to at time t
+        self.exit = exit
 
-        for i in range(self.n):
-            self.matrix[i, i] = reward_staying
+    def __str__(self):
+        return 'player @ ' + str(self.position)
 
-        for ne in states.target.neighbours:
-            self.matrix[ne.id, states.target.id] = reward_target
 
-        for nr1 in states.r1.neighbours:
-            self.to_r1.append((nr1.id, states.r1.id))
-            self.deterministic[nr1.id, states.r1.id] = False
+class Minotaur:
+    def __init__(self, id, position):
+        self.id = id
+        self.position = position
+        self.neighbours = []
 
-        for nr2 in states.r2.neighbours:
-            self.to_r2.append((nr2.id, states.r2.id))
-            self.deterministic[nr2.id, states.r2.id] = False
+    def __str__(self):
+        return 'minotaur @ ' + str(self.position)
 
-    def __getitem__(self, indices):
-        if self.deterministic[indices]:
-            return self.matrix[indices]
+
+class Reward:
+    def __init__(self, reward_eaten, reward_exiting, reward_staying=0, reward_moving=0):
+        self.reward_eaten = reward_eaten
+        self.reward_exiting = reward_exiting
+        self.reward_staying = reward_staying
+        self.reward_moving = reward_moving
+
+    def reward(self, player, minotaur):
+        if player.position == minotaur.position:
+            return self.reward_eaten
+
+        elif player.position == player.exit:
+            return self.reward_exiting
+
         else:
-            if indices in self.to_r1:
-                return choice([-1, -7], 1, p=[0.5, 0.5])[0]
-            elif indices in self.to_r2:
-                return choice([-1, -2], 1, p=[0.5, 0.5])[0]
-
-    def __str__(self):
-        return str(self.matrix)
-
+            return 0
