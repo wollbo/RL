@@ -131,8 +131,6 @@ def run_game(maze, states, rewards, pause_time=0.6):
 
         print('At time {:.0f}'.format(t))
         print(current_state)
-        # print('Expected reward: {:.0f}'.format(expected_reward[t]))
-        # print('Received reward: {:.0f}'.format(np.sum(received_reward[:t+1])))
 
         (p_2, p_1) = current_state.player.position
         (m_2, m_1) = current_state.minotaur.position
@@ -150,9 +148,11 @@ def run_game(maze, states, rewards, pause_time=0.6):
         plt.pause(pause_time)
         plt.clf()
 
-        if states.finite_ho
+        if states.finite_horizon:
             action = current_state.player.action[t]
-        elif 
+        elif states.infinite_horizon_discounted:
+            action = current_state.player.action
+
         pns = states.possible_next_states(current_state, action)
         next_state = choice(pns)    # random minotaur movement
         current_state = next_state
