@@ -122,9 +122,6 @@ def run_game(maze, states, rewards, pause_time=0.6):
 
     current_state = states.initial_state    # starting position
     for t in range(states.time_horizon):
-        game_ax = fig.add_subplot(grid[:, 0])
-        exp_ax = fig.add_subplot(grid[0, 1])
-        rew_ax = fig.add_subplot(grid[1, 1])
 
         expected_reward[t] = current_state.value[t]
         received_reward[t] = rewards(current_state)
@@ -135,13 +132,15 @@ def run_game(maze, states, rewards, pause_time=0.6):
         (p_2, p_1) = current_state.player.position
         (m_2, m_1) = current_state.minotaur.position
 
+        game_ax = fig.add_subplot(grid[:, 0])
+        exp_ax = fig.add_subplot(grid[0, 1])
+        rew_ax = fig.add_subplot(grid[1, 1])
         exp_ax.stem(expected_reward, use_line_collection=True)
         exp_ax.set_xticks(range(states.time_horizon))
         exp_ax.set_yticks(range(6))
         rew_ax.stem(np.cumsum(received_reward), use_line_collection=True)
         rew_ax.set_xticks(range(states.time_horizon))
         rew_ax.set_yticks(range(6))
-
         game_ax.matshow(maze, cmap=plt.cm.gray)
         game_ax.plot(p_1, p_2, 'bo')
         game_ax.plot(m_1, m_2, 'rx')
