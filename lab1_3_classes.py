@@ -1,14 +1,15 @@
 import numpy as np
 from itertools import count
 import copy
+from numpy.random import choice
 
 
 class StateSpace:
-    def __init__(self, grid_size=(4, 4)):
+    def __init__(self, grid_size, r, p, b):
         self.grid_size = grid_size
-        self.robber_initial_position = (0, 0)
-        self.police_initial_position = (3, 3)
-        self.bank_position = (1, 1)
+        self.robber_initial_position = r
+        self.police_initial_position = p
+        self.bank_position = b
 
         self.initial_state = None
         self.discount_factor = 0.8
@@ -24,7 +25,6 @@ class StateSpace:
         self.states = []
         self.states_matrix = np.full((self.n_robber_states, self.n_police_states), State)
         self.generate_states()
-
 
     def __getitem__(self, i):
         return self.states[i]
@@ -92,18 +92,35 @@ class StateSpace:
         return [subset[next_police.id] for next_police in state.police.neighbours]
 
 
+class Reward:
+    def __init__(self):
+        self.robbing_bank = 1
+        self.being_caught = -10
+
+    def __call__(self, state):
+        if state.robber_caught():
+            return self.being_caught
+        elif state.robber_robbing():
+            return self.robbing_bank
+        else:
+            return 0
+
+
 class State:
     def __init__(self, id, robber, police):
         self.id = id
         self.robber = robber
         self.police = police
-        self.value = 0          # v0
+        #self.value = 0          # v0
 
     def __str__(self):
         return str(self.robber) + '\n' + str(self.police)
 
     def robber_caught(self):
-        return self.robber.position == self.police.position
+        if self.robber.position == self.police.position:
+            return True
+        else:
+            return False
 
     def robber_robbing(self):
         if not self.robber_caught() and self.robber.is_in_bank():
@@ -126,6 +143,13 @@ class Robber:
     def is_in_bank(self):
         return self.position == self.bank_position
 
+    def select_action(self, epsilon):
+        if choice(a=[True, False], size=1, p=[1-epsilon, epsilon]):
+            return self.action
+        else:
+            actions = list(np.r_[:len(self.neighbours)])
+            actions.remove(self.action)
+            return choice(actions)
 
 class Police:
     def __init__(self, id, position):
@@ -137,30 +161,15 @@ class Police:
         return 'police @ ' + str(self.position)
 
 
-class Reward:
-    def __init__(self):
-        self.robbing_bank = 1
-        self.being_caught = -10
-
-    def __call__(self, state):
-        if state.robber_caught:
-            print('oy')
-            return self.being_caught
-        elif state.robber_robbing:
-            print('yay')
-            return self.robbing_bank
-        else:
-            return 0
-
-
 class QFunction:
     def __init__(self, states):
+        self.states = states
         self.discount_factor = states.discount_factor
         self.q_values = []
         for state in states:
             qs = []
             for action in range(len(state.robber.neighbours)):
-                qsa = QValue(state=state, action=action)
+                qsa = QValue()
                 qs.append(qsa)
             self.q_values.append(qs)
 
@@ -176,36 +185,51 @@ class QFunction:
         return s
 
     def __call__(self, state, action):
-        return self.internal_call(state=state, action=action)
+        return self.__internal_call__(state=state, action=action)
 
-    def internal_call(self, state, action):
+    def __internal_call__(self, state, action):
         return self.q_values[state.id][action]
 
     def update(self, state, action, reward, next_state):
-        qt = self.internal_call(state=state, action=action)
+        qt = self.__internal_call__(state=state, action=action)
         next_state_q_values = [qsb.value for qsb in self.q_values[next_state.id]]
+        correction = reward + self.discount_factor * np.max(next_state_q_values) - qt.value
+        qt.update_value(correction=correction)
 
-        raw_correction = reward + self.discount_factor * np.max(next_state_q_values) - qt.value
-        correction = self.step_size(qt) * raw_correction
-        qt.update(correction=correction)
+    def update_sarsa(self, state, action, reward, next_state, next_action):
+        qt = self.__internal_call__(state=state, action=action)
+        next_state_action = self.__internal_call__(state=next_state, action=next_action)
+        correction = reward + self.discount_factor * next_state_action.value - qt.value
+        qt.update_value(correction=correction)
+        q_values_in_state = [qsa.value for qsa in self.q_values[state.id]]
+        state.robber.action = np.argmax(q_values_in_state)
 
-    def step_size(self, q_value):
-        # one divided by number of previous updates, initially set to 1
-        return 1/q_value.n_updates
+    def set_policies(self):
+        for state in self.states:
+            q_values = [qsa.value for qsa in self.q_values[state.id]]
+            state.robber.action = np.argmax(q_values)
+
+    def values_when(self, police_position=(0, 0)):
+        mat = np.zeros(self.states.grid_size)
+        police = [p for p in self.states.police_states if p.position == police_position][0]
+
+        state_subset = self.states.subset_where(police_id=police.id)
+        for state in state_subset:
+            mat[state.robber.position] = self.q_values[state.id][state.robber.action].value
+        return mat
 
 
-class QValue:
-    def __init__(self, state, action):
-        self.state = state
-        self.action = action
+class QValue:   # action-state value
+    def __init__(self):
         self.value = 0.0
         self.n_updates = 1
 
     def __str__(self):
         return '{:.4f}'.format(self.value)
 
-    def update(self, correction):
-        self.value += correction
+    def update_value(self, correction):
+        self.value += (1/self.n_updates) * correction
         self.n_updates += 1
+
 
 
