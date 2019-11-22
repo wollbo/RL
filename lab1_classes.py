@@ -10,6 +10,7 @@ class StateSpace:       # state space for finite horizon problems
         self.entry = entry
         self.exit = exit
         self.initial_state = None   # initialized in generate_states
+        self.terminal_state = None  # same
         self.minotaur_can_stand_still = minotaur_can_stand_still
         self.maze_shape = (n_rows, n_cols)
 
@@ -82,11 +83,17 @@ class StateSpace:       # state space for finite horizon problems
             return None
 
     def possible_next_states(self, state, action):  # j \in S
-        if state.losing():
+        if state == self.terminal_state:
             possible_next_states = [state]
 
-        elif state.winning():
-            possible_next_states = [state]
+        elif state.losing() or state.winning():
+            possible_next_states = [self.terminal_state]
+
+        # if state.losing():
+        #     possible_next_states = [state]
+        #
+        # elif state.winning():
+        #     possible_next_states = [state]
 
         else:
             next_player_state = state.player.neighbours[action]
@@ -110,19 +117,36 @@ class StateSpace:       # state space for finite horizon problems
                     state = State(id=next(state_counter),
                                   mdp=self.mdp,
                                   player=copy.deepcopy(player_state),
-                                  minotaur=copy.deepcopy(minotaur_state),   # does not need to be deep copy really ??
+                                  minotaur=minotaur_state,   # does not need to be deep copy really ??
                                   time_horizon=self.time_horizon)
                 elif self.mdp == 'discounted':
                     state = State(id=next(state_counter),
                                   mdp=self.mdp,
                                   player=copy.deepcopy(player_state),
-                                  minotaur=copy.deepcopy(minotaur_state))
+                                  minotaur=minotaur_state)
 
                 if state.player.position == self.entry and state.minotaur.position == self.exit:
                     self.initial_state = state
 
                 self.states.append(state)
                 self.states_matrix[player_state.id, minotaur_state.id] = state
+
+        terminal_player_state = [ps for ps in self.player_states if ps.position == self.entry][0]
+        terminal_minotaur_state = [ms for ms in self.minotaur_states if ms.position == self.exit][0]
+
+        if self.mdp == 'finite':
+            terminal_state = State(id=next(state_counter),
+                                   mdp=self.mdp,
+                                   player=copy.deepcopy(terminal_player_state),
+                                   minotaur=terminal_minotaur_state,  # does not need to be deep copy really ??
+                                   time_horizon=self.time_horizon)
+        elif self.mdp == 'discounted':
+            terminal_state = State(id=next(state_counter),
+                                   mdp=self.mdp,
+                                   player=copy.deepcopy(terminal_player_state),
+                                   minotaur=copy.deepcopy(terminal_minotaur_state))
+        self.states.append(terminal_state)
+        self.terminal_state = terminal_state
 
     def generate_player_states(self):
         (n_rows, n_cols) = self.maze_shape
@@ -246,11 +270,9 @@ class Minotaur:
 
 
 class Reward:
-    def __init__(self, reward_eaten, reward_exiting, reward_staying=0, reward_moving=0):
+    def __init__(self, reward_eaten, reward_exiting):
         self.reward_eaten = reward_eaten
         self.reward_exiting = reward_exiting
-        self.reward_staying = reward_staying
-        self.reward_moving = reward_moving
 
     def __call__(self, state):
         if state.winning():
@@ -259,7 +281,4 @@ class Reward:
             return self.reward_eaten
         else:
             return 0
-
-
-# Infinte Horizon State Space
 

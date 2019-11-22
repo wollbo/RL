@@ -176,60 +176,52 @@ def run_finite_game(states, rewards, pause_time=0.6):
 
 
 def run_game(states, rewards, pause_time=0.6):
-    fig = plt.figure(figsize=(10, 4))
-    grid = plt.GridSpec(2, 2, wspace=0.4, hspace=0.3)
+    fig = plt.figure(figsize=(6, 4))
+    grid = plt.GridSpec(2, 1, wspace=0.4, hspace=0.3)
+    game_ax = fig.add_subplot(grid[0, 0])
+    game_ax.matshow(states.maze, cmap=plt.cm.gray)
+    exp_ax = fig.add_subplot(grid[1, 0])
+    exp_ax.set_ylabel('Expected reward', labelpad=0)
 
     expected_reward = []
     received_reward = []
-
     state = states.initial_state    # starting position
     t = 0
-    while True:
+    (p_2, p_1) = state.player.position
+    (m_2, m_1) = state.minotaur.position
+    player_marker, = game_ax.plot(p_1, p_2, 'bo')
+    minotaur_marker, = game_ax.plot(m_1, m_2, 'rx')
+    plt.pause(pause_time)
+    while not(state.winning() or state.losing()):
         if states.finite_horizon:
             expected_reward.append(state.value[t])
             print('At time {:.0f} of {:.0f}'.format(t, states.time_horizon))
+            print('Expected reward: {:.3f}'.format(state.value[t]))
+            action = state.player.action[t]
         elif states.infinite_horizon_discounted:
             expected_reward.append(state.value)
             print('At time {:.0f}'.format(t))
-
-        received_reward.append(rewards(state))
+            print('Expected reward: {:.3f}'.format(state.value))
+            action = state.player.action
         print(state)
+        received_reward.append(rewards(state))
 
-        (p_2, p_1) = state.player.position
-        (m_2, m_1) = state.minotaur.position
-
-        game_ax = fig.add_subplot(grid[:, 0])
-        exp_ax = fig.add_subplot(grid[0, 1])
-        exp_ax.set_ylabel('Expected reward', labelpad=0)
-        rew_ax = fig.add_subplot(grid[1, 1])
-        rew_ax.set_ylabel('Accumulated reward', labelpad=0)
+        exp_ax.clear()
         exp_ax.stem(expected_reward, use_line_collection=True)
         exp_ax.set_xticks(range(t+1))
-        # exp_ax.set_yticks(range(6))
-        rew_ax.stem(np.cumsum(received_reward), use_line_collection=True)
-        rew_ax.set_xticks(range(t+1))
-        # rew_ax.set_yticks(range(6))
-        game_ax.matshow(states.maze, cmap=plt.cm.gray)
-        game_ax.plot(p_1, p_2, 'bo')
-        game_ax.plot(m_1, m_2, 'rx')
+
+        state = choice(states.possible_next_states(state, action))    # random minotaur movement
+        (p_2, p_1) = state.player.position
+        (m_2, m_1) = state.minotaur.position
+        player_marker.set_data(p_1, p_2)
+        minotaur_marker.set_data(m_1, m_2)
         plt.pause(pause_time)
-        plt.clf()
+        t += 1
 
-        if state.losing() or state.winning():
-            print('winning / losing')
-            break
-
-        elif states.finite_horizon and t == states.time_horizon-1:
+        if states.finite_horizon and t == states.time_horizon:
             print('time out')
             break
 
-        if states.finite_horizon:
-            action = state.player.action[t]
-        elif states.infinite_horizon_discounted:
-            action = state.player.action
-
-        state = choice(states.possible_next_states(state, action))    # random minotaur movement
-        t += 1
 
 def show_policies(states, maze, minotaur_position, t=0):
     fig = plt.figure(num=16)
