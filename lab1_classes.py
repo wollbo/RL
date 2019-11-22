@@ -175,7 +175,7 @@ class StateSpace:       # state space for finite horizon problems
                     state.neighbours.append(other_state)  # same column neighbours
 
 
-class State:  # state for finite horizon problems
+class State:
     def __init__(self, mdp, id, player, minotaur, time_horizon=20):
         self.id = id
         self.player = player

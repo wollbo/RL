@@ -112,8 +112,23 @@ def value_iteration(states, rewards, plot=False):
     return i
 
 
-def run_game(maze, states, rewards, pause_time=0.6):
+def probability_of_exiting(states, n_tests):
+    state = states.initial_state
+    score = []
+    for _ in range(n_tests):
+        while True:
+            action = state.player.action
+            state = choice(states.possible_next_states(state, action))
+            if state.losing():
+                score.append(False)
+                break
+            elif state.winning():
+                score.append(True)
+                break
+    return sum(score)/n_tests
 
+
+def run_finite_game(states, rewards, pause_time=0.6):
     fig = plt.figure(figsize=(10, 4))
     grid = plt.GridSpec(2, 2, wspace=0.4, hspace=0.3)
 
@@ -132,16 +147,19 @@ def run_game(maze, states, rewards, pause_time=0.6):
         (p_2, p_1) = current_state.player.position
         (m_2, m_1) = current_state.minotaur.position
 
+        fig.suptitle('t={:.0f}'.format(t))
         game_ax = fig.add_subplot(grid[:, 0])
         exp_ax = fig.add_subplot(grid[0, 1])
+        exp_ax.set_ylabel('Expected reward', labelpad=0)
         rew_ax = fig.add_subplot(grid[1, 1])
+        exp_ax.set_ylabel('Accumulated reward', labelpad=0)
         exp_ax.stem(expected_reward, use_line_collection=True)
         exp_ax.set_xticks(range(states.time_horizon))
         exp_ax.set_yticks(range(6))
         rew_ax.stem(np.cumsum(received_reward), use_line_collection=True)
         rew_ax.set_xticks(range(states.time_horizon))
         rew_ax.set_yticks(range(6))
-        game_ax.matshow(maze, cmap=plt.cm.gray)
+        game_ax.matshow(states.maze, cmap=plt.cm.gray)
         game_ax.plot(p_1, p_2, 'bo')
         game_ax.plot(m_1, m_2, 'rx')
         plt.pause(pause_time)
@@ -157,6 +175,61 @@ def run_game(maze, states, rewards, pause_time=0.6):
         current_state = next_state
 
 
+def run_game(states, rewards, pause_time=0.6):
+    fig = plt.figure(figsize=(10, 4))
+    grid = plt.GridSpec(2, 2, wspace=0.4, hspace=0.3)
+
+    expected_reward = []
+    received_reward = []
+
+    state = states.initial_state    # starting position
+    t = 0
+    while True:
+        if states.finite_horizon:
+            expected_reward.append(state.value[t])
+            print('At time {:.0f} of {:.0f}'.format(t, states.time_horizon))
+        elif states.infinite_horizon_discounted:
+            expected_reward.append(state.value)
+            print('At time {:.0f}'.format(t))
+
+        received_reward.append(rewards(state))
+        print(state)
+
+        (p_2, p_1) = state.player.position
+        (m_2, m_1) = state.minotaur.position
+
+        game_ax = fig.add_subplot(grid[:, 0])
+        exp_ax = fig.add_subplot(grid[0, 1])
+        exp_ax.set_ylabel('Expected reward', labelpad=0)
+        rew_ax = fig.add_subplot(grid[1, 1])
+        rew_ax.set_ylabel('Accumulated reward', labelpad=0)
+        exp_ax.stem(expected_reward, use_line_collection=True)
+        exp_ax.set_xticks(range(t+1))
+        # exp_ax.set_yticks(range(6))
+        rew_ax.stem(np.cumsum(received_reward), use_line_collection=True)
+        rew_ax.set_xticks(range(t+1))
+        # rew_ax.set_yticks(range(6))
+        game_ax.matshow(states.maze, cmap=plt.cm.gray)
+        game_ax.plot(p_1, p_2, 'bo')
+        game_ax.plot(m_1, m_2, 'rx')
+        plt.pause(pause_time)
+        plt.clf()
+
+        if state.losing() or state.winning():
+            print('winning / losing')
+            break
+
+        elif states.finite_horizon and t == states.time_horizon-1:
+            print('time out')
+            break
+
+        if states.finite_horizon:
+            action = state.player.action[t]
+        elif states.infinite_horizon_discounted:
+            action = state.player.action
+
+        state = choice(states.possible_next_states(state, action))    # random minotaur movement
+        t += 1
 
 def show_policies(states, maze, minotaur_position, t=0):
     fig = plt.figure(num=16)
