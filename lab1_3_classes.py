@@ -91,6 +91,9 @@ class StateSpace:
         subset = self.subset_where(robber_id=next_robber_state.id)
         return [subset[next_police.id] for next_police in state.police.neighbours]
 
+    def reset_actions(self):
+        for state in self.states:
+            state.robber.action = 0
 
 class Reward:
     def __init__(self):
@@ -144,12 +147,13 @@ class Robber:
         return self.position == self.bank_position
 
     def select_action(self, epsilon):
-        if choice(a=[True, False], size=1, p=[1-epsilon, epsilon]):
+        if choice(a=[True, False], size=1, p=[1-epsilon, epsilon]):     # greedy
             return self.action
         else:
             actions = list(np.r_[:len(self.neighbours)])
             actions.remove(self.action)
             return choice(actions)
+
 
 class Police:
     def __init__(self, id, position):
@@ -228,7 +232,7 @@ class QValue:   # action-state value
         return '{:.4f}'.format(self.value)
 
     def update_value(self, correction):
-        self.value += (1/self.n_updates) * correction
+        self.value += self.n_updates ** (-2/3) * correction
         self.n_updates += 1
 
 
