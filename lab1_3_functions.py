@@ -83,7 +83,8 @@ def evolution_of_initial_state(states, rewards, n_sarsa, epsilons, n_checkpoints
                                 epsilon=epsilons[n],
                                 n=n_sarsa, n_checkpoints=n_checkpoints)
         np.savetxt(X=v_i_s, fmt=['%10.0f', '%10.2e'],
-                   fname='eis_e=' + str(epsilons[n]) + '.txt')
+                   fname='eis_e={:.3f}.txt'.format(epsilons[n]))
+                   #fname='eis_e=' + str(epsilons[n]) + '.txt')
 
         values_initial_state[:, n] = v_i_s[:, 1]
     t = v_i_s[:, 0]
