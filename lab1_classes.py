@@ -4,7 +4,7 @@ import copy
 
 
 class StateSpace:       # state space for finite horizon problems
-    def __init__(self, mdp, maze, entry=(0, 0), exit=(6, 5), discount_factor=0.95, precision=1, time_horizon=20, minotaur_can_stand_still=False):
+    def __init__(self, mdp, maze, entry=(0, 0), exit=(6, 5), lifetime_mean=30, precision=1, time_horizon=20, minotaur_can_stand_still=False):
         (n_rows, n_cols) = maze.shape
         self.maze = maze
         self.entry = entry
@@ -17,7 +17,8 @@ class StateSpace:       # state space for finite horizon problems
         if mdp == 'discounted':
             self.mdp = mdp
             self.infinite_horizon_discounted = True
-            self.discount_factor = discount_factor
+            self.lifetime_mean = lifetime_mean
+            self.discount_factor = 1 - 1/lifetime_mean
             self.precision = precision
             self.tolerance = self.precision * (1 - self.discount_factor) / self.discount_factor
             self.finite_horizon = False
@@ -46,6 +47,17 @@ class StateSpace:       # state space for finite horizon problems
             self.value_iteration_difference = np.full(len(self), 1, dtype=np.float)
 
         print('States generated.')
+
+    def get_info(self):
+        output = '\n\nState Setup:'
+        if self.infinite_horizon_discounted:
+            output += '\nDiscount factor: {:.5f}'.format(self.discount_factor)
+            output += '\nPrecision: {:.5f}'.format(self.precision)
+            output += '\nTolerance: {:.5f}'.format(self.tolerance)
+        elif self.finite_horizon:
+            output += '\nTime horizon: {:.0f}'.format(self.time_horizon)
+        output += '\nMinotaur can stand still: ' + str(self.minotaur_can_stand_still)
+        return output
 
     def __len__(self):
         return len(self.states)
@@ -106,8 +118,13 @@ class StateSpace:       # state space for finite horizon problems
         for state in self.states:
             self.value_iteration_difference[state.id] = state.update_value()
 
-    def stopping_condition(self):
-        return all(np.less(self.value_iteration_difference, self.tolerance))
+    def stopping_condition(self, i=200):
+        if np.linalg.norm(self.value_iteration_difference) < self.tolerance:
+            return True
+        else:
+            return False
+
+    # all(np.less(self.value_iteration_difference, self.tolerance))
 
     def generate_states(self):
         state_counter = count(0)
