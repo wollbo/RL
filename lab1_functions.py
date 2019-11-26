@@ -153,7 +153,7 @@ def probability_of_exiting(states, n_tests):
     return sum(score)/n_tests
 
 
-def run_finite_game(states, pause_time=0.6):
+def run_finite_game_show_values(states, pause_time=0.6):
     if states.finite_horizon:
         game_horizon = states.time_horizon
     elif states.infinite_horizon_discounted:
@@ -187,8 +187,19 @@ def run_finite_game(states, pause_time=0.6):
         print('At time {:.0f} of {:.0f}'.format(t, game_horizon))
         print(current_state)
         fig.suptitle('t={:.0f}, T = {:.0f}'.format(t, game_horizon))
+
+        (p_4, p_3) = (p_2, p_1)
+        (m_4, m_3) = (m_2, m_1)
+
         (p_2, p_1) = current_state.player.position
         (m_2, m_1) = current_state.minotaur.position
+        if (p_2, p_1) != (p_4, p_3):
+            game_ax.arrow(p_3, p_4, p_1 - p_3, p_2 - p_4, fc='blue', ec='blue', head_width=0.2, head_length=0.4, length_includes_head=True)
+        else:
+            game_ax.plot(p_1, p_2, marker='o', color='blue')
+
+        game_ax.arrow(m_3, m_4, m_1 - m_3, m_2 - m_4, fc='red', ec='red', head_width=0.2, head_length=0.4, length_includes_head=True)
+
         player_marker.set_data(p_1, p_2)
         minotaur_marker.set_data(m_1, m_2)
         exp_ax.clear()
@@ -217,52 +228,66 @@ def run_finite_game(states, pause_time=0.6):
         t += 1
 
 
-def run_game(states, rewards, pause_time=0.6):
-    fig = plt.figure(figsize=(6, 4))
-    grid = plt.GridSpec(2, 1, wspace=0.4, hspace=0.3)
-    game_ax = fig.add_subplot(grid[0, 0])
-    game_ax.matshow(states.maze, cmap=plt.cm.gray)
-    exp_ax = fig.add_subplot(grid[1, 0])
-    exp_ax.set_ylabel('Expected reward', labelpad=0)
+def run_finite_game(states, pause_time=0.3):
+    if states.finite_horizon:
+        game_horizon = states.time_horizon
+    elif states.infinite_horizon_discounted:
+        time_horizon_distribution = geom(p=1 / states.lifetime_mean)
+        game_horizon = time_horizon_distribution.rvs()
 
-    expected_reward = []
-    received_reward = []
-    state = states.initial_state    # starting position
+    current_state = states.initial_state    # starting position
     t = 0
-    (p_2, p_1) = state.player.position
-    (m_2, m_1) = state.minotaur.position
-    player_marker, = game_ax.plot(p_1, p_2, 'bo')
-    minotaur_marker, = game_ax.plot(m_1, m_2, 'rx')
+
+    fig = plt.figure(num=13)
+    game_ax = fig.add_subplot(111)
+    game_ax.matshow(states.maze, cmap=plt.cm.gray)
+    (p_2, p_1) = current_state.player.position
+    (m_2, m_1) = current_state.minotaur.position
+    player_marker, = game_ax.plot(p_1, p_2, color='blue', marker='$P$', markersize=16)
+    minotaur_marker, = game_ax.plot(m_1, m_2, color='red', marker='$M$', markersize=16)
     plt.pause(pause_time)
-    while not(state.winning() or state.losing()):
-        if states.finite_horizon:
-            expected_reward.append(state.value[t])
-            print('At time {:.0f} of {:.0f}'.format(t, states.time_horizon))
-            print('Expected reward: {:.3f}'.format(state.value[t]))
-            action = state.player.action[t]
-        elif states.infinite_horizon_discounted:
-            expected_reward.append(state.value)
-            print('At time {:.0f}'.format(t))
-            print('Expected reward: {:.3f}'.format(state.value))
-            action = state.player.action
-        print(state)
-        received_reward.append(rewards(state))
 
-        exp_ax.clear()
-        exp_ax.stem(expected_reward, use_line_collection=True)
-        exp_ax.set_xticks(range(t+1))
+    while True:
+        print('At time {:.0f} of {:.0f}'.format(t, game_horizon))
+        print(current_state)
+        #fig.suptitle('t={:.0f}, T = {:.0f}'.format(t, game_horizon))
 
-        state = choice(states.possible_next_states(state, action))    # random minotaur movement
-        (p_2, p_1) = state.player.position
-        (m_2, m_1) = state.minotaur.position
+        (p_4, p_3) = (p_2, p_1)
+        (m_4, m_3) = (m_2, m_1)
+
+        (p_2, p_1) = current_state.player.position
+        (m_2, m_1) = current_state.minotaur.position
+
+        if (p_2, p_1) != (p_4, p_3):
+            game_ax.arrow(p_3, p_4, p_1 - p_3, p_2 - p_4, fc='blue', ec='blue', head_width=0.2, head_length=0.4, length_includes_head=True)
+        else:
+            game_ax.plot(p_1, p_2, marker='o', color='blue')
+
+        game_ax.arrow(m_3, m_4, m_1 - m_3, m_2 - m_4, fc='red', ec='red', head_width=0.2, head_length=0.4, length_includes_head=True)
+
         player_marker.set_data(p_1, p_2)
         minotaur_marker.set_data(m_1, m_2)
         plt.pause(pause_time)
-        t += 1
 
-        if states.finite_horizon and t == states.time_horizon:
-            print('time out')
+        if current_state.losing():
+            print('\nLosing by death\n')
             break
+        elif current_state.winning():
+            print('\nWinning\n')
+            break
+        elif t == game_horizon - 1:
+            print('\nLosing by Time Out\n')
+            break
+
+        if states.finite_horizon:
+            action = current_state.player.action[t]
+        elif states.infinite_horizon_discounted:
+            action = current_state.player.action
+
+        pns = states.possible_next_states(current_state, action)
+        next_state = choice(pns)    # random minotaur movement
+        current_state = next_state
+        t += 1
 
 
 def show_policies(states, maze, minotaur_position, t=0):

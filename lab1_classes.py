@@ -101,12 +101,6 @@ class StateSpace:       # state space for finite horizon problems
         elif state.losing() or state.winning():
             possible_next_states = [self.terminal_state]
 
-        # if state.losing():
-        #     possible_next_states = [state]
-        #
-        # elif state.winning():
-        #     possible_next_states = [state]
-
         else:
             next_player_state = state.player.neighbours[action]
             subset = self.subset_where(player_id=next_player_state.id)
