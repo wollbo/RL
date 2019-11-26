@@ -41,8 +41,10 @@ epsilon = 0.01
 
 
 epsilons = [0.01, 0.02, 0.03, 0.05, 0.07, 0.10]    # greedy
+epsilons = [0.1]
 n_iterations = 10000000
-eis, t = evolution_of_initial_state(states=states, rewards=rewards, n_sarsa=n_iterations, epsilons=epsilons, n_checkpoints=1000)
+n_iterations = 5000
+eis, t = evolution_of_initial_state_sarsa(states=states, rewards=rewards, n_sarsa=n_iterations, epsilons=epsilons, n_checkpoints=1000)
 print(t.shape)
 print(eis.shape)
 fig = plt.figure(num=7)

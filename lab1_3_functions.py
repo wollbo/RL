@@ -31,6 +31,41 @@ def run_game(states, ax):
         plt.pause(0.2)  # pause and update (draw) positions
 
 
+def q_learning_algorithm(states, rewards, n=10000000, n_checkpoints=500, plot=False, game_times=[]):
+
+    if plot:
+        game_fig = plt.figure(num=5)
+        game_ax = game_fig.add_subplot(111)
+
+    states.reset_actions()
+    q_function = QFunction(states=states)
+    state = states.initial_state
+
+    value_initial_state = np.full((n_checkpoints, 2), np.nan)
+    is_id = states.initial_state.id
+    is_robber = states.initial_state.robber
+
+    for t in range(n):
+        action = choice(np.r_[:len(state.robber.neighbours)])
+        reward = rewards(state=state)
+        next_state = choice(states.possible_next_states(state=state, action=action))
+        q_function.update(state=state, action=action, reward=reward, next_state=next_state)
+
+        if t % round(n/n_checkpoints) == 0:
+            print(t / n)
+            value_initial_state[round(t*n_checkpoints/n), 0] = t
+            value_initial_state[round(t*n_checkpoints/n), 1] = q_function.q_values[is_id][is_robber.action].value
+
+        if t in game_times:
+            q_function.set_policies()
+            game_fig.suptitle('Policy after {:.0f} iterations of {:.0f}'.format(t, n))
+            run_game(states=states, ax=game_ax)
+
+        state = next_state
+
+    return value_initial_state
+
+
 def sarsa_algorithm(states, rewards, epsilon=0.2, n=10000000, n_checkpoints=500, plot=False, game_times=[]):
     if plot:
         game_fig = plt.figure(num=10)
@@ -74,10 +109,10 @@ def sarsa_algorithm(states, rewards, epsilon=0.2, n=10000000, n_checkpoints=500,
     return value_initial_state
 
 
-def evolution_of_initial_state(states, rewards, n_sarsa, epsilons, n_checkpoints=500):
+def evolution_of_initial_state_sarsa(states, rewards, n_sarsa, epsilons, n_checkpoints=500):
     values_initial_state = np.full((n_checkpoints, len(epsilons)), np.nan)
     for n in range(len(epsilons)):
-        print('\t\t\t ' + str(n) + ' ' + str(len(epsilons)))
+        print('\t\t\t ' + str(n+1) + ' / ' + str(len(epsilons)))
         v_i_s = sarsa_algorithm(states=states,
                                 rewards=rewards,
                                 epsilon=epsilons[n],

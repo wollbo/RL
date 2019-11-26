@@ -12,42 +12,17 @@ states = StateSpace(grid_size=grid_size,
                     p=police_position,
                     b=bank_position)
 rewards = Reward()
+n = 1000000
+n_checkpoints = 500
+game_times = np.int_(n*np.array([0.5, 0.7, 0.9]))
+# vis = q_learning_algorithm(states=states, rewards=rewards, n=n, n_checkpoints=n_checkpoints, plot=True, game_times=game_times)
+vis = q_learning_algorithm(states=states, rewards=rewards, n=n, n_checkpoints=n_checkpoints)
 
-q_function = QFunction(states=states)
-
-state = states.initial_state
-n = 1000
-for t in range(n):
-    possible_actions = np.r_[:len(state.robber.neighbours)]
-    action = choice(possible_actions)
-    reward = rewards(state=state)
-    next_state = choice(states.possible_next_states(state=state, action=action))
-    q_function.update(state=state, action=action, reward=reward, next_state=next_state)
-    state = next_state
-
-    if t % 1000 == 0:
-        print(t/n)
-
-q_function.set_policies()
-
-state = states.initial_state
-
-fig = plt.figure()
+fig = plt.figure(num=2)
 ax = fig.add_subplot(111)
-run_game(states=states, ax=ax)
+ax.plot(np.log10(vis[:, 0]), vis[:, 1])
+plt.show()
 
-# for _ in range(100):
-#     if state.robber_caught():
-#         print('robber caught')
-#     elif state.robber_robbing():
-#         print('money')
-#     else:
-#         print('moving around')
-#
-#     reward = rewards(state=state)
-#     action = state.robber.action
-#     possible_next_states = states.possible_next_states(state=state, action=action)
-#     next_state = choice(possible_next_states)
-#     state = next_state
-
-# '''
+# game_fig = plt.figure(num=4)
+# game_ax = game_fig.add_subplot(111)
+# run_game(states=states, ax=game_ax)
