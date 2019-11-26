@@ -73,14 +73,14 @@ def sarsa_algorithm(states, rewards, epsilon=0.2, n=10000000, n_checkpoints=500,
     states.reset_actions()
     q_function = QFunction(states=states)
     state = states.initial_state
-    # accumulated_reward_array = np.full((n_checkpoints, 2), np.nan)
-    # accumulated_reward = 0
-    value_initial_state = np.full((n_checkpoints, 2), np.nan)
+    accumulated_reward_array = np.full((n_checkpoints, 2), np.nan)
+    accumulated_reward = 0
+    #value_initial_state = np.full((n_checkpoints, 2), np.nan)
     is_id = states.initial_state.id
     is_robber = states.initial_state.robber
     for t in range(n):
         reward = rewards(state=state)
-        # accumulated_reward += reward
+        accumulated_reward += reward
         action = state.robber.select_action(epsilon=epsilon)
         possible_next_states = states.possible_next_states(state=state, action=action)
         next_state = choice(possible_next_states)
@@ -94,10 +94,10 @@ def sarsa_algorithm(states, rewards, epsilon=0.2, n=10000000, n_checkpoints=500,
 
         if t % round(n/n_checkpoints) == 0:
             print(t / n)
-            value_initial_state[round(t*n_checkpoints/n), 0] = t
-            value_initial_state[round(t*n_checkpoints/n), 1] = q_function.q_values[is_id][is_robber.action].value
-            # accumulated_reward_array[round(t*n_checkpoints/n), 0] = t
-            # accumulated_reward_array[round(t*n_checkpoints/n), 1] = accumulated_reward
+            # value_initial_state[round(t*n_checkpoints/n), 0] = t
+            # value_initial_state[round(t*n_checkpoints/n), 1] = q_function.q_values[is_id][is_robber.action].value
+            accumulated_reward_array[round(t*n_checkpoints/n), 0] = t
+            accumulated_reward_array[round(t*n_checkpoints/n), 1] = accumulated_reward
 
         if t in game_times and plot:
             game_fig.suptitle('Policy after {:.0f} iterations of {:.0f}'.format(t, n))
@@ -105,8 +105,8 @@ def sarsa_algorithm(states, rewards, epsilon=0.2, n=10000000, n_checkpoints=500,
 
         state = next_state
 
-    # return accumulated_reward_array
-    return value_initial_state
+    return accumulated_reward_array
+    # return value_initial_state
 
 
 def evolution_of_initial_state_sarsa(states, rewards, n_sarsa, epsilons, n_checkpoints=500):
@@ -119,7 +119,6 @@ def evolution_of_initial_state_sarsa(states, rewards, n_sarsa, epsilons, n_check
                                 n=n_sarsa, n_checkpoints=n_checkpoints)
         np.savetxt(X=v_i_s, fmt=['%10.0f', '%10.2e'],
                    fname='eis_e={:.3f}.txt'.format(epsilons[n]))
-                   #fname='eis_e=' + str(epsilons[n]) + '.txt')
 
         values_initial_state[:, n] = v_i_s[:, 1]
     t = v_i_s[:, 0]
@@ -138,6 +137,6 @@ def learning_curves(states, rewards, n_sarsa, n_averaging, epsilons, n_checkpoin
         averaged_accumulated_rewards[:, n] = np.mean(accumulated_rewards, axis=1)
         t_aar = np.stack((t, averaged_accumulated_rewards[:, n]), axis=1)
         np.savetxt(X=t_aar, fmt=['%10.0f', '%10.2e'],
-                   fname='aar_e=' + str(epsilons[n]) + '_averages=' + str(n_averaging) + '.txt')
+                   fname='acr_e=' + str(epsilons[n]) + '_averages=' + str(n_averaging) + '.txt')
 
     return averaged_accumulated_rewards, t

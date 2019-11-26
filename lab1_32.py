@@ -23,6 +23,15 @@ q_function = QFunction(states=states)
 
 epsilon = 0.01
 
+
+a, t = learning_curves(states=states, rewards=rewards, n_sarsa=5000, n_averaging=30, epsilons=[0.2], n_checkpoints=500)
+
+fig = plt.figure(num=8)
+ax = fig.add_subplot(111)
+fig.suptitle('Accumulated Reward')
+ax.plot(t, a)
+plt.show()
+
 # n_iterations = 10000
 # game_times = list(np.int_(n_iterations * array([0.25, 0.5, 0.8])))
 # plot_games = False
@@ -40,19 +49,19 @@ epsilon = 0.01
 # ax.plot(acc_rew[:, 0], acc_rew[:, 1])
 
 
-epsilons = [0.01, 0.02, 0.03, 0.05, 0.07, 0.10]    # greedy
-epsilons = [0.1]
-n_iterations = 10000000
-n_iterations = 5000
-eis, t = evolution_of_initial_state_sarsa(states=states, rewards=rewards, n_sarsa=n_iterations, epsilons=epsilons, n_checkpoints=1000)
-print(t.shape)
-print(eis.shape)
-fig = plt.figure(num=7)
-ax = fig.add_subplot(111)
-fig.suptitle('Value of Initial State')
-plt.plot(t, eis)
-ax.legend([str(epsilon) for epsilon in epsilons])
-
-plt.show()
+# epsilons = [0.01, 0.02, 0.03, 0.05, 0.07, 0.10]    # greedy
+# epsilons = [0.1]
+# n_iterations = 10000000
+# n_iterations = 5000
+# eis, t = evolution_of_initial_state_sarsa(states=states, rewards=rewards, n_sarsa=n_iterations, epsilons=epsilons, n_checkpoints=1000)
+# print(t.shape)
+# print(eis.shape)
+# fig = plt.figure(num=7)
+# ax = fig.add_subplot(111)
+# fig.suptitle('Value of Initial State')
+# plt.plot(t, eis)
+# ax.legend([str(epsilon) for epsilon in epsilons])
+#
+# plt.show()
 
 #'''
