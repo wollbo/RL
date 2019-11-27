@@ -302,8 +302,9 @@ def show_policies(states, maze, minotaur_position, t=0):
         #fig.suptitle('Optimal Policies, $\lambda =  {:.3}$'.format(states.discount_factor))
         #ax.set_xlabel('$\pi (s)$', labelpad=17)
 
-    ax.set_yticklabels([])
-    ax.set_xticklabels([])
+    #ax.set_yticklabels([])
+    #ax.set_xticklabels([])
+
     ax.matshow(maze, cmap=plt.cm.gray)
 
     minotaur = [s for s in states.minotaur_states if s.position == minotaur_position][0]
@@ -337,10 +338,10 @@ def show_values(states, maze, minotaur_position, t=0):
     #elif states.infinite_horizon_discounted:
         #fig.suptitle('Expected Rewards, $\lambda$ = {:.2f}'.format(states.discount_factor))
         #ax.set_xlabel('$V_\lambda^\pi (s)$', labelpad=12)
-    ax.set_yticklabels([])
-    ax.set_yticks([])
-    ax.set_xticklabels([])
-    ax.set_xticks([])
+    #ax.set_yticklabels([])
+    #ax.set_yticks([])
+    #ax.set_xticklabels([])
+    #ax.set_xticks([])
 
     minotaur = [s for s in states.minotaur_states if s.position == minotaur_position][0]
     values = np.full(maze.shape, np.nan)
@@ -351,7 +352,20 @@ def show_values(states, maze, minotaur_position, t=0):
         elif states.infinite_horizon_discounted:
             values[state.player.position] = state.value
 
-    pos = ax.matshow(values)        # cmap=plt.cm.autumn
+    pos = ax.matshow(values, vmin=0, vmax=1)        # cmap=plt.cm.autumn
+
+    for r in range(values.shape[0]):
+        for c in range(values.shape[1]):
+            if not np.isnan(values[r, c]):
+                val = values[r, c]
+                if val == 1.0 or val == 0.0:
+                    ax.plot(c, r, marker='${:.0f}$'.format(val), color='b', markersize=11)
+                else:
+                    mark = '${:.2f}$'.format(val)
+                    ax.plot(c, r, marker=mark, color='b', markersize=28)
+
+
+
     (m_y, m_x) = minotaur.position
     ax.plot(m_x, m_y, color='r', marker='$M$', markersize=16)
 

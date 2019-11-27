@@ -3,19 +3,19 @@ from lab1_classes import *
 
 maze = generate_maze()
 entry = (0, 0)
-exit = (6, 5)
-time_horizon = 16
+exit = (6, 5)   # (6, 6)
+time_horizon = 16   # 16
 
-n = 100000
+n = 10000
 
-file = open('exiting_probailities.txt', 'w+')
+file = open('exiting_probailities_exit-moved.txt', 'w+')
 
 rewards = Reward(reward_eaten=-1, reward_exiting=1)
 
 T0 = 15
 p1 = []
 horizons = range(T0, 20)
-for time_horizon in [16]:
+for time_horizon in [14, 15, 16]:
     states = StateSpace(mdp='finite',
                         maze=maze,
                         time_horizon=time_horizon,
@@ -27,6 +27,8 @@ for time_horizon in [16]:
     file.write('\nprobability of exiting (average from {:.0f} trials) is {:.8f}\n'.format(n, p))
     p1.append(p)
 
+
+'''
 p1 = []
 horizons = range(30, 41)
 for time_horizon in horizons:
@@ -86,5 +88,6 @@ file.write('\n' + str(p1))
 #
 # p = probability_of_exiting(states=states, n_tests=n)
 
+#'''
 
 file.close()
