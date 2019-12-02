@@ -11,7 +11,7 @@ states = StateSpace(grid_size=grid_size,
                     b=bank_position)
 rewards = Reward()
 
-n = 1000000 #00
+n = 1000000          # 00
 n_checkpoints = 1000
 game_times = np.int_(n*np.array([0.5, 0.7, 0.9]))
 # vis = q_learning_algorithm(states=states, rewards=rewards, n=n, n_checkpoints=n_checkpoints, plot=True, game_times=game_times)
