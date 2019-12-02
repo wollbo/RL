@@ -1,5 +1,5 @@
-from lab1_functions import *
-from lab1_classes import *
+from great_escape.lab1_functions import *
+from great_escape.lab1_classes import *
 
 
 maze = generate_maze()
@@ -38,7 +38,13 @@ states = StateSpace(mdp='discounted', maze=maze,
                     minotaur_can_stand_still=True)
 value_iteration(states=states, rewards=rewards, plot=False)
 
-# run_finite_game(states=states)
+run_finite_game(states=states)
+run_finite_game(states=states)
+run_finite_game(states=states)
+run_finite_game(states=states)
+run_finite_game(states=states)
+run_finite_game(states=states)
+
 
 show_values(states=states, maze=maze, minotaur_position=(5, 6))
 show_policies(states=states, maze=maze, minotaur_position=(5, 6))

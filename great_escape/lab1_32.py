@@ -1,7 +1,5 @@
-from lab1_3_classes import *
-from lab1_3_functions import *
+from great_escape.lab1_3_functions import *
 import matplotlib.pyplot as plt
-from numpy import array
 
 grid_size = (4, 4)
 robber_position = (0, 0)

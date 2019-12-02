@@ -1,7 +1,7 @@
 from numpy.random import choice
 import numpy as np
 from itertools import count
-from lab0_functions import plot_arrow
+from great_escape.lab0_functions import plot_arrow
 
 
 class StateSpace:       # state space for finite horizon problems

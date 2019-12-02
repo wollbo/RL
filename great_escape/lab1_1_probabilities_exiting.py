@@ -1,5 +1,5 @@
-from lab1_functions import *
-from lab1_classes import *
+from great_escape.lab1_functions import *
+from great_escape.lab1_classes import *
 
 maze = generate_maze()
 entry = (0, 0)

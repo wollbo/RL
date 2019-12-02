@@ -275,8 +275,8 @@ grid_size = (4, 4)
 robber_position = (0, 0)
 police_position = (3, 3)
 bank_position = (1, 1)
-greedy_robber = 0.2
-greedy_police = 0.2
+greedy_robber = 0.3
+greedy_police = 0.05
 
 states = StateSpace(grid_size=grid_size, r=robber_position, p=police_position, b=bank_position,
                     r_epsilon=greedy_robber, p_epsilon=greedy_police)

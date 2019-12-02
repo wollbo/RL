@@ -239,6 +239,7 @@ def run_finite_game(states, pause_time=0.3):
     t = 0
 
     fig = plt.figure(num=13)
+    fig.clear()
     game_ax = fig.add_subplot(111)
     game_ax.matshow(states.maze, cmap=plt.cm.gray)
     (p_2, p_1) = current_state.player.position

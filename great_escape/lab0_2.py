@@ -1,5 +1,5 @@
-from lab0_functions import *
-from lab0_classes import *
+from great_escape.lab0_functions import *
+from great_escape.lab0_classes import *
 
 " PROBLEM 2 "
 

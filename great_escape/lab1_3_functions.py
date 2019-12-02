@@ -1,4 +1,4 @@
-from lab1_3_classes import *
+from great_escape.lab1_3_classes import *
 import numpy as np
 from numpy.random import choice
 import matplotlib.pyplot as plt
@@ -33,19 +33,21 @@ def run_game(states, ax):
 
 def q_learning_algorithm(states, rewards, n=10000000, n_checkpoints=500, plot=False, game_times=[]):
 
-    if plot:
-        game_fig = plt.figure(num=5)
-        game_ax = game_fig.add_subplot(111)
+    #if plot:
+    #    game_fig = plt.figure(num=5)
+    #    game_ax = game_fig.add_subplot(111)
 
     states.reset_actions()
     q_function = QFunction(states=states)
     state = states.initial_state
 
-    value_initial_state = np.full((n_checkpoints, 2), np.nan)
-    is_id = states.initial_state.id
-    is_robber = states.initial_state.robber
+    #value_initial_state = np.full((n_checkpoints, 2), np.nan)
+    #is_id = states.initial_state.id
+    #is_robber = states.initial_state.robber
 
     for t in range(n):
+        #state = states[np.int_(t % len(states))]
+
         action = choice(np.r_[:len(state.robber.neighbours)])
         reward = rewards(state=state)
         next_state = choice(states.possible_next_states(state=state, action=action))
@@ -53,17 +55,18 @@ def q_learning_algorithm(states, rewards, n=10000000, n_checkpoints=500, plot=Fa
 
         if t % round(n/n_checkpoints) == 0:
             print(t / n)
-            value_initial_state[round(t*n_checkpoints/n), 0] = t
-            value_initial_state[round(t*n_checkpoints/n), 1] = q_function.q_values[is_id][is_robber.action].value
+        #    value_initial_state[round(t*n_checkpoints/n), 0] = t
+        #    value_initial_state[round(t*n_checkpoints/n), 1] = q_function.q_values[is_id][is_robber.action].value
 
-        if t in game_times:
-            q_function.set_policies()
-            game_fig.suptitle('Policy after {:.0f} iterations of {:.0f}'.format(t, n))
-            run_game(states=states, ax=game_ax)
+        #if t in game_times:
+        #    q_function.set_policies()
+        #    game_fig.suptitle('Policy after {:.0f} iterations of {:.0f}'.format(t, n))
+        #    run_game(states=states, ax=game_ax)
 
         state = next_state
 
-    return value_initial_state
+    q_function.set_policies()
+    #return value_initial_state
 
 
 def sarsa_algorithm(states, rewards, epsilon=0.2, n=10000000, n_checkpoints=500, plot=False, game_times=[]):
@@ -140,3 +143,35 @@ def learning_curves(states, rewards, n_sarsa, n_averaging, epsilons, n_checkpoin
                    fname='acr_e=' + str(epsilons[n]) + '_averages=' + str(n_averaging) + '.txt')
 
     return averaged_accumulated_rewards, t
+
+
+def show_policies(states, police_position, fignum=16):
+
+    fig = plt.figure(num=fignum)
+    fig.clear()
+    ax = fig.add_subplot(1, 1, 1)
+
+    grid = np.ones(states.grid_size)
+    grid[states.bank_position] = 0
+    colormap = matplotlib_colormap.get_cmap('RdBu')
+    ax.matshow(grid, cmap=colormap)
+    ax.set_yticklabels([])
+    ax.set_xticklabels([])
+
+    police = [p for p in states.police_states if p.position == police_position][0]
+
+    for state in states.subset_where(police_id=police.id):
+
+        action = state.robber.action
+
+        (y1, x1) = state.robber.position
+        (y2, x2) = state.robber.neighbours[action].position
+
+        if (y1, x1) == (y2, x2):
+            plt.plot(x1, y1, 'o', color=colormap(0.15))
+        else:
+            plt.arrow(x1, y1, x2-x1, y2-y1, fc=colormap(0.15), ec=colormap(0.15), head_width=0.2, head_length=0.4, length_includes_head=True)
+
+    (p2, p1) = police.position
+    ax.plot(p1, p2, color=colormap(0.85), marker='$P$', markersize=16)     # create mark for police
+
