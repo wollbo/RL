@@ -12,6 +12,7 @@ from numpy.random import choice
 
 EPISODES = 1000  # Maximum number of episodes
 
+
 # DQN Agent for the Cartpole
 # Q function approximation with NN, experience replay, and target network
 class DQNAgent:
@@ -285,13 +286,11 @@ class DQNAgent:
 #                                             sys.exit()
 #                         agent.plot_data(episodes, scores, max_q_mean)
 
-
-
 networkSize = [[64, 32], [32, 16], [128]]
 targetUpdateFrequency = [2, 1, 3]
 learningRate = [1e-3, 1e-4, 1e-2]
 discountFactor = [0.99, 0.97, 0.95]
-memorySize = [1000, 1500, 500]
+memorySize = [1000, 1200, 800]
 
 for k in range(11):
     network_size = networkSize[0]
@@ -320,7 +319,6 @@ for k in range(11):
         memory_size = memorySize[1]
     elif k == 10:
         memory_size = memorySize[2]
-
 
     if __name__ == "__main__":
         # For CartPole-v0, maximum episode length is 200
